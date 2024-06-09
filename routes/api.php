@@ -19,8 +19,7 @@ Route::post('/verify', 'App\Http\Controllers\Auth\VerificationController@verify'
 Route::post('/reset-password', 'App\Http\Controllers\Auth\ResetPasswordController@reset')->middleware('auth:api');
 // forget password
 Route::post('/forget-password', 'App\Http\Controllers\Auth\ForgotPasswordController@forgot');
-// forget reset password
-Route::post('/forget-reset-password', 'App\Http\Controllers\Auth\ForgotPasswordController@reset');
+
 // update profile
 Route::post('/profile', [UserProfileController::class, 'store']);
 // update profile

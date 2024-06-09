@@ -18,7 +18,6 @@ class VerificationController extends Controller
     {
         // Retrieve OTP from cache using the email as the key
         $storedOTP = Cache::get('otp');
-
         // Compare stored OTP with user input
         if ($request->otp == $storedOTP) {
             // OTP is correct, mark email as verified
@@ -29,9 +28,10 @@ class VerificationController extends Controller
 
             // Clear OTP from cache
             Cache::forget($request->email);
+            $token = $user->createToken('myToken')->accessToken;
 
             // Return a success response
-            return response()->json(['message' => 'Email verified successfully'], 200);
+            return response()->json(['message' => 'Email verified successfully', 'token' => $token], 200);
         } else {
             // Invalid OTP, return an error response
             return response()->json(['error' => 'Invalid OTP'], 400);

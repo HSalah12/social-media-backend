@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use App\Services\OTPService;
 use Carbon\Carbon;
 use App\Mail\OTPMail;
+use Auth;
 
 
 class ForgotPasswordController extends Controller
@@ -37,55 +38,16 @@ class ForgotPasswordController extends Controller
         }
 
         // Generate reset token
-    $resetToken = base64_encode(random_bytes(32));
-
+        $token = $user->createToken('my_token')->accessToken;
         // Store reset token and timestamp in database
-        DB::table('password_resets')->updateOrInsert(
-            ['email' => $user->email],
-            ['token' => $resetToken, 'created_at' => Carbon::now()]
-        );
+
         $otpData = $this->otpService->generateOTP();
         // Generate OTP
         $otp = $otpData['otp'];
 
-        // Send reset email to user
-        Mail::to($user->email)->send(new ResetPasswordMail($resetToken));
-
-        return response()->json(['message' => 'Reset password email sent','token' => $resetToken, 'otp' => $otp]);
+        return response()->json(['message' => 'Reset password email sent','token' => $token, 'otp' => $otp]);
     }
 
-    public function reset(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'token' => 'required|string',
-            'password' => 'required|string|min:8',
-        ]);
-    
-        $resetToken = DB::table('password_resets')
-            ->where('email', $request->email)
-            ->where('token', $request->token)
-            ->first();
-    
-        if (!$resetToken) {
-            return response()->json(['message' => 'Invalid reset token'], 400);
-        }
-    
-        // Check if reset token is expired (optional)
-        $expirationTime = Carbon::parse($resetToken->created_at)->addMinutes(60); // Adjust as needed
-        if (Carbon::now()->gt($expirationTime)) {
-            return response()->json(['message' => 'Reset token expired'], 400);
-        }
-    
-        // Update user's password
-        $user = User::where('email', $request->email)->first();
-        $user->password = bcrypt($request->password);
-        $user->save();
-    
-        // Delete reset token from database
-        DB::table('password_resets')->where('email', $request->email)->delete();
-    
-        return response()->json(['message' => 'Password reset successfully']);
-    }
-    
+   
+
 }
