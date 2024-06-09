@@ -7,9 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-class User extends Authenticatable
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\HasMediaTrait;
+
+class User extends Authenticatable implements HasMedia
 {
-    use HasFactory, Notifiable,HasApiTokens ;
+    use HasFactory, Notifiable,HasApiTokens, InteractsWithMedia ;
     
     /**
      * The attributes that are mass assignable.
@@ -41,4 +45,24 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function followers()
+{
+    return $this->belongsToMany(User::class, 'followers', 'follows_user_id', 'user_id');
+}
+
+public function follows()
+{
+    return $this->belongsToMany(User::class, 'followers', 'user_id', 'follows_user_id');
+}
+
+public function follow(User $user)
+{
+    return $this->follows()->save($user);
+}
+
+public function unfollow(User $user)
+{
+    return $this->follows()->detach($user);
+}
 }

@@ -36,7 +36,7 @@ class CreateUsersTable extends Migration
             $table->text('favorite_quotes')->nullable();
             $table->text('education_history')->nullable();
             $table->text('employment_history')->nullable();
-            $table->enum('relationship_status', array(0 ,1 ,2, 3, 4, 5))->default(0)->change();
+            $table->enum('relationship_status', ['single', 'in_a_relationship', 'married', 'divorced', 'widowed'])->default('single');
             $table->string('activity_engagement')->nullable();
             $table->json('notification_preferences')->nullable();
             $table->json('security_settings')->nullable();
