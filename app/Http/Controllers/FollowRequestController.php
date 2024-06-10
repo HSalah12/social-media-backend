@@ -55,4 +55,15 @@ class FollowRequestController extends Controller
         $token = $user->createToken('myToken')->accessToken;
         return response()->json(['message' => 'Follow request rejected', 'token' => $token]);
     }
+
+    public function unfollow($id)
+    {
+        // Find the follow request
+        $followRequest = FollowRequest::findOrFail($id);
+    
+        // Delete the follow request
+        $followRequest->delete();
+    
+        return response()->json(['message' => 'Unfollowed successfully']);
+    }
 }

@@ -42,15 +42,11 @@ Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destr
 // Show account data
 Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
 
-// follow and unfollow
-Route::post('/follow/{user}', 'App\Http\Controllers\UserProfileController@follow');
-Route::post('/unfollow/{user}', 'App\Http\Controllers\UserProfileController@unfollow');
-
 //Accept and Rejectfollow and unfollow
 Route::post('follow-requests/send', 'App\Http\Controllers\FollowRequestController@send')->middleware('auth:api');
 Route::put('follow-requests/{id}/accept', 'App\Http\Controllers\FollowRequestController@accept')->middleware('auth:api');
 Route::put('follow-requests/{id}/reject', 'App\Http\Controllers\FollowRequestController@reject')->middleware('auth:api');
-
+Route::delete('follow-requests/{id}', 'App\Http\Controllers\FollowRequestController@unfollow')->middleware('auth:api');
 // GET activities
 Route::get('profile/{id}/activities', 'App\Http\Controllers\UserProfileController@activities')->middleware('auth:api');
 
