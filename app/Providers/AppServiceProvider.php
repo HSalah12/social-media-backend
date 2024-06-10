@@ -1,40 +1,27 @@
 <?php
 
-// app/Providers/RouteServiceProvider.php
-
 namespace App\Providers;
 
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\ServiceProvider;
 
-class RouteServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
 {
-    protected $namespace = 'App\Http\Controllers';
-
-    public function boot()
+    /**
+     * Register any application services.
+     */
+    public function register(): void
     {
-        parent::boot();
-        Passport::loadKeysFrom(__DIR__.'/../secrets/oauth');
+        //
     }
 
-    public function map()
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
     {
-        $this->mapApiRoutes();
-        $this->mapWebRoutes();
-    }
-
-    protected function mapApiRoutes()
-    {
-        Route::prefix('api')
-            ->middleware('api')
-            ->namespace($this->namespace)
-            ->group(base_path('routes/api.php'));
-    }
-
-    protected function mapWebRoutes()
-    {
-        Route::middleware('web')
-             ->namespace($this->namespace)
-             ->group(base_path('routes/web.php'));
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            return config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}";
+        });
     }
 }
