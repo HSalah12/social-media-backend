@@ -65,4 +65,30 @@ public function unfollow(User $user)
 {
     return $this->follows()->detach($user);
 }
+
+public function followings()
+{
+    return $this->belongsToMany(User::class, 'follows', 'follower_id', 'followed_id');
+}
+
+// Check if a user is following another user
+public function isFollowing(User $user)
+{
+    return $this->followings()->where('followed_id', $user->id)->exists();
+}
+
+// Check if a user is followed by another user
+public function isFollowedBy(User $user)
+{
+    return $this->followers()->where('follower_id', $user->id)->exists();
+}
+public function friends()
+{
+    return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id');
+}
+
+public function isFriendWith(User $user)
+{
+    return $this->friends()->where('friend_id', $user->id)->exists();
+}
 }

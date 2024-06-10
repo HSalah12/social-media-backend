@@ -48,6 +48,15 @@ class UserController extends Controller
         // DB::commit();
         return response()->json(['message' => 'User data updated successfully', 'user' => $user]);
     }
+    public function friendStatus($userId, $friendId)
+    {
+        $user = User::findOrFail($userId);
+        $friend = User::findOrFail($friendId);
+
+        $isFriend = $user->isFriendWith($friend);
+
+        return response()->json(['isFriend' => $isFriend]);
+    }
 }
 
 

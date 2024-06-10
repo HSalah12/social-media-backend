@@ -66,4 +66,14 @@ class FollowRequestController extends Controller
     
         return response()->json(['message' => 'Unfollowed successfully']);
     }
+    public function checkFollowStatus(User $user)
+    {
+        $follower = Auth::user();
+
+        $isFollowing = $follower->followings()->where('followed_id', $user->id)->exists();
+
+        return response()->json(['isFollowing' => $isFollowing]);
+    }
+
+    
 }

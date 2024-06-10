@@ -57,4 +57,7 @@ Route::post('/profile/deactivate', 'App\Http\Controllers\UserProfileController@d
 Route::get('/profile-interactions', 'App\Http\Controllers\ProfileInteractionController@index')->middleware('auth:api');
 Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionController@store')->middleware('auth:api');
 
-Auth::routes();
+Auth::routes();   
+
+Route::get('users/{followerId}/follow-status/{followedId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
+Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
