@@ -203,32 +203,12 @@ class UserProfileController extends Controller
 
 
     public function showdata($id)
-    {
-
-        
+    {    
         $user = User::findOrFail($id);
         return new UserResource($user);
     }
 
    
-
-public function follow(User $user)
-{
-    auth()->user()->follow($user);
-    return response()->json([
-        'message' => 'User make Follow successfully.'
-    ], 200);
-    return back();
-}
-
-public function unfollow(User $user)
-{
-    auth()->user()->unfollow($user);
-    return response()->json([
-        'message' => 'User make UnFollow successfully.'
-    ], 200);
-    return back();
-}
 
 public function activities(Request $request, $id)
 {
