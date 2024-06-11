@@ -46,11 +46,11 @@ class RegisterController extends Controller
             
             // Add other fields as needed
         ]);
-            $token = $user->createToken('myToken')->accessToken;
+            $token = $user->verify_token();
           
         // Send OTP via email
         $this->otpService->sendOTPByEmail($user->email, $otp);
 
-        return response()->json(['message' => 'User registered successfully', 'user' => $user,'otp' => $otp, 'token' => $token], 201);
+        return response()->json(['message' => 'User registered successfully', 'user' => $user,'otp' => $otp, 'token' => $token], 200);
     }
 }

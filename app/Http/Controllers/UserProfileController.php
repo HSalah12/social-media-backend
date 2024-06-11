@@ -88,7 +88,7 @@ class UserProfileController extends Controller
             'badges' => $validatedData['badges'] ? 1 : 0,  // Convert boolean to integer
         ]);
     
-        return response()->json($user, 201);
+        return response()->json($user, 200);
     }
     public function update(Request $request, $id)
 {
@@ -202,9 +202,9 @@ class UserProfileController extends Controller
     }
 
 
-    public function showdata($id)
+    public function showdata(Request $request)
     {    
-        $user = User::findOrFail($id);
+        $user = Auth::user();
         return new UserResource($user);
     }
 

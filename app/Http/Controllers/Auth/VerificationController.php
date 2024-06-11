@@ -22,7 +22,7 @@ class VerificationController extends Controller
         if ($request->otp == $storedOTP) {
             // OTP is correct, mark email as verified
             
-            $user =  $user = Auth::user();
+            $user = User::find(Cache::get('user_id'));
             $user->email_verified_at = now();
             $user->save();
 
@@ -34,7 +34,10 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Email verified successfully', 'token' => $token], 200);
         } else {
             // Invalid OTP, return an error response
-            return response()->json(['error' => 'Invalid OTP'], 400);
+            return response()->json([
+                'error' => 'Wrong OTP', 
+                'message' => 'Invalid OTP'        
+            ], 400);
         }
     }
 }

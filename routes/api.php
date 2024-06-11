@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\FollowRequestController;
+use App\Http\Controllers\FriendSuggestionController;
+use App\Http\Controllers\FriendRequestController;
 
 
 // register
@@ -19,7 +21,7 @@ Route::post('login', 'App\Http\Controllers\Auth\LoginController@login');
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
 // verify
-Route::post('/verify', 'App\Http\Controllers\Auth\VerificationController@verify')->Middleware('auth:api');
+Route::post('/verify', 'App\Http\Controllers\Auth\VerificationController@verify')->Middleware('verify_token');
 
 // reset password
 Route::post('/reset-password', 'App\Http\Controllers\Auth\ResetPasswordController@reset')->middleware('auth:api');
@@ -40,13 +42,14 @@ Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@show')->
 Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destroy')->middleware('auth:api');
 
 // Show account data
-Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
+Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
 
 //Accept and Rejectfollow and unfollow
 Route::post('follow-requests/send', 'App\Http\Controllers\FollowRequestController@send')->middleware('auth:api');
 Route::put('follow-requests/{id}/accept', 'App\Http\Controllers\FollowRequestController@accept')->middleware('auth:api');
 Route::put('follow-requests/{id}/reject', 'App\Http\Controllers\FollowRequestController@reject')->middleware('auth:api');
 Route::delete('follow-requests/{id}', 'App\Http\Controllers\FollowRequestController@unfollow')->middleware('auth:api');
+
 // GET activities
 Route::get('profile/{id}/activities', 'App\Http\Controllers\UserProfileController@activities')->middleware('auth:api');
 
@@ -59,5 +62,18 @@ Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionCon
 
 Auth::routes();   
 
+
+// follow-status & friend-status
 Route::get('users/{followerId}/follow-status/{followedId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
+
+
+//friend suggestions
+Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@suggest')->middleware('auth:api');
+
+
+//friend requests
+
+Route::post('friend-requests/send/{receiverId}', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
+Route::put('friend-requests/accept/{requestId}','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
+Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');

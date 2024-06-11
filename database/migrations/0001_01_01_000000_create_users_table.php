@@ -13,7 +13,7 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('username')->unique();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at');
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->string('profile_picture')->nullable();
@@ -39,6 +39,7 @@ class CreateUsersTable extends Migration
             $table->enum('relationship_status', ['single', 'in_a_relationship', 'married', 'divorced', 'widowed'])->default('single');
             $table->string('activity_engagement')->nullable();
             $table->json('notification_preferences')->nullable();
+            $table->string('location')->nullable();
             $table->json('security_settings')->nullable();
             $table->json('achievements')->nullable();
             $table->boolean('badges')->default(false);

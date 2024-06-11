@@ -13,7 +13,7 @@ class ProfileInteractionController extends Controller
         $user = $request->user();
         $interactions = ProfileInteraction::where('user_id', $user->id)->get();
         $token = $user->createToken('myToken')->accessToken;
-        return response()->json([$interactions, 'token' => $token  ] ,201);
+        return response()->json([$interactions, 'token' => $token  ] ,200);
     }
 
     public function store(Request $request)
@@ -28,6 +28,6 @@ class ProfileInteractionController extends Controller
             'action' => $request->action,
         ]);
         $token = $user->createToken('myToken')->accessToken;
-        return response()->json([$interaction, 'token' => $token  ],201);
+        return response()->json([$interaction, 'token' => $token  ],200);
     }
 }

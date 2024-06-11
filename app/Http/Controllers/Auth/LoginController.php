@@ -13,23 +13,29 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
-        $user = User::where('email',$credentials['email'])->first();
-        $password = Hash::check($credentials['password'],$user->password);
+        $user = User::where('email', $credentials['email'])->first();
         
-        if ($password) {
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            if (!$user->hasVerifiedEmail()) {
+                return response()->json([
+                    'error' => 'Email Not Verified',
+                    'message' => 'Please verify your email address before logging in.'
+                ], 403);
+            }
+
             $token = $user->createToken('myToken')->accessToken;
             $user->update(['active' => true]);
-             $user->save();
-            return response()->json(['message' => 'login successfully', 'user' => $user,'token' => $token,], 201);
+            return response()->json([
+                'message' => 'Login successful',
+                'user' => $user,
+                'token' => $token,
+            ], 200);
         }
-        
-        
+
         return response()->json([
             'error' => 'Unauthorized',
-            'token' => $token,
-            'message' => 'not autherized'
+            'message' => 'Email or Password incorrect'
         ], 401);
-        
     }
-
 }
+
