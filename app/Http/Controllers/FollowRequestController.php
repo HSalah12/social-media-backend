@@ -53,15 +53,15 @@ class FollowRequestController extends Controller
     
         // Save the followRequest and followed_id
         $followRequest->status = 'accepted';
-       
+        $followRequest->followed_id = $user->id; // Assuming the user being followed is the current user
+        $followRequest->save();
     
         // Find the user who sent the follow request
         // $user = User::findOrFail($followRequest->user_id);
     
         // Update the user's followings
         $user->follows()->attach($followRequest->user_id);
-        $user->followings()->attach($followRequest->followed_id);
-        $followRequest->save();
+        // $user->followings()->attach($followRequest->followed_id);
     // dd( $followRequest);
         return response()->json(['message' => 'Follow request accepted', 'token' => $token]);
     }
