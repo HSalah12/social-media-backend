@@ -101,20 +101,24 @@ class User extends Authenticatable implements HasMedia
     // Method to suggest friends
     public function suggestFriends()
     {
-        // Find users from the same location
-        $sameLocationUsers = User::where('location', $this->location)
-                                  ->where('id', '!=', $this->id)
-                                  ->get();
+        // Get the current user's friends
+        $friends = $this->friends()->pluck('id')->toArray();
 
-        // Find users with mutual friends
+        // Get mutual friends
         $suggestions = User::where('id', '!=', $this->id)
-        ->whereHas('friends', function ($query) {
-            $query->whereIn('friend_id', $this->friends()->pluck('id')->toArray());
-        })
-        ->whereNotIn('id', $this->friends()->pluck('id')->toArray())
-        ->get();
+            ->whereHas('followers', function ($query) use ($friends) {
+                $query->whereIn('follower_id', $friends);
+            })
+            ->whereDoesntHave('followers', function ($query) {
+                $query->where('follower_id', $this->id);
+            })
+            ->withCount(['followers' => function ($query) use ($friends) {
+                $query->whereIn('follower_id', $friends);
+            }])
+            ->orderBy('followers_count', 'desc')
+            ->get();
 
-            return $suggestions;
+        return $suggestions;
     }
 
 
