@@ -81,7 +81,8 @@ class User extends Authenticatable implements HasMedia
     
     public function friends()
     {
-        return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')->withPivot('is_accepted');;
+        return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
+            ->wherePivot('is_accepted', true);
     }
 
     public function isFriendWith(User $user)
