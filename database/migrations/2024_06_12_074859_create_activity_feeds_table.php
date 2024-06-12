@@ -12,7 +12,7 @@ class CreateActivityFeedsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('activity_type');
-            $table->string('description');
+            $table->string('description')->nullable();
             $table->unsignedBigInteger('related_id')->nullable();
             $table->timestamps();
         
