@@ -38,7 +38,7 @@ class ForgotPasswordController extends Controller
         }
 
         // Generate reset token
-        $token = $user->createToken('my_token')->accessToken;
+        $token = $user->verify_token();
         // Store reset token and timestamp in database
 
         $otpData = $this->otpService->generateOTP();
@@ -48,6 +48,26 @@ class ForgotPasswordController extends Controller
         return response()->json(['message' => 'Reset password email sent','token' => $token, 'otp' => $otp]);
     }
 
-   
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Email not found'], 404);
+        }
+
+        // Generate OTP
+        $otpData = $this->otpService->generateOTP();
+        $otp = $otpData['otp'];
+        $token = $user->verify_token();
+        // Send OTP to the user's email
+        Mail::to($user->email)->send(new OTPMail($otp));
+
+        return response()->json(['message' => 'OTP resent successfully','token' => $token, 'otp' => $otp]);
+    }
 
 }

@@ -21,7 +21,7 @@ class LogFriendRequestSent
         ActivityFeed::create([
             'user_id' => $sender->id,
             'activity_type' => 'friend_request_sent',
-            'description' => "{$sender->name} sent a friend request to {$receiver->name}",
+            'description' => "{$sender->id} sent a friend request to {$receiver->id}",
             'related_id' => $friendRequest->id
         ]);
     }

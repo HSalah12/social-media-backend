@@ -21,7 +21,7 @@ class LogFriendRequestRejected
         ActivityFeed::create([
             'user_id' => $receiver->id,
             'activity_type' => 'friend_request_rejected',
-            'description' => "{$receiver->name} rejected a friend request from {$sender->name}",
+            'description' => "{$receiver->id} rejected a friend request from {$sender->id}",
             'related_id' => $friendRequest->id
         ]);
     }

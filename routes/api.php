@@ -29,6 +29,9 @@ Route::post('/reset-password', 'App\Http\Controllers\Auth\ResetPasswordControlle
 // forget password
 Route::post('/forget-password', 'App\Http\Controllers\Auth\ForgotPasswordController@forgot');
 
+// resend otp 
+Route::post('/forget-password/resendotp', 'App\Http\Controllers\Auth\ForgotPasswordController@resendOtp');
+
 // update profile
 Route::post('/profile', [UserProfileController::class, 'store']);
 
@@ -62,24 +65,17 @@ Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionCon
 
 Auth::routes();   
 
-
 // follow-status & friend-status
 Route::get('users/{followerId}/follow-status/{followedId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
 
-
 //friend suggestions
 Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@suggest')->middleware('auth:api');
 
-
 //friend requests
-
 Route::post('friend-requests/send/{receiverId}', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
 Route::put('friend-requests/accept/{requestId}','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
 Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');
 
-
-
-//
-
+//activity-feeds
 Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
