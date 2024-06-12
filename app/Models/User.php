@@ -29,7 +29,16 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
         ];
     }
+ public function setPrivacySettings($settings)
+    {
+        $this->privacy_settings = $settings;
+        $this->save();
+    }
 
+    public function getPrivacySettings()
+    {
+        return $this->privacy_settings ?? [];
+    }
     public function followers()
     {
         return $this->belongsToMany(User::class, 'follow_requests', 'user_id','follows_user_id', 'followed_id')

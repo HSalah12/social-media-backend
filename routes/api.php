@@ -79,3 +79,6 @@ Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\Friend
 
 //activity-feeds
 Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
+
+
+Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
