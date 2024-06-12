@@ -77,3 +77,9 @@ Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@
 Route::post('friend-requests/send/{receiverId}', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
 Route::put('friend-requests/accept/{requestId}','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
 Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');
+
+
+
+//
+
+Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
