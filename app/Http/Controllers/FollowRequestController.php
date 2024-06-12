@@ -30,7 +30,7 @@ class FollowRequestController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('myToken')->accessToken;
-        $followRequest->save();
+        $followRequest->save(); 
 
         event(new FollowRequestSent($followRequest));
 

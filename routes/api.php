@@ -9,6 +9,7 @@ use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\FollowRequestController;
 use App\Http\Controllers\FriendSuggestionController;
 use App\Http\Controllers\FriendRequestController;
+use App\Http\Controllers\NewsFeedController;
 
 
 // register
@@ -80,5 +81,15 @@ Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\Friend
 //activity-feeds
 Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
 
-
+//privacy-settings
 Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
+
+
+//news-feed
+Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
+Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
+Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
+
+// Aggregate
+Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
+
