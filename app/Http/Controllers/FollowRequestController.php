@@ -87,7 +87,15 @@ class FollowRequestController extends Controller
     public function checkFollowStatus(User $user)
     {
         $follower = Auth::user();
-        $isFollowing = $follower->follows()->where('followed_id', $user->id)->exists();
+
+        // Check if there's a direct following relationship
+        $isFollowing = $follower->isFollowing($user);
+
+        // If not following directly, check if there's a pending follow request that has been accepted
+        if (!$isFollowing) {
+            $isPending = $follower->followRequests()->where('followed_id', $user->id)->where('status', 'accepted')->exists();
+            $isFollowing = $isPending;
+        }
 
         return response()->json(['isFollowing' => $isFollowing]);
     }

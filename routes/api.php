@@ -67,7 +67,7 @@ Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionCon
 Auth::routes();   
 
 // follow-status & friend-status
-Route::get('users/{followerId}/follow-status/{followedId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
+Route::get('users/follow-status/{followerId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
 
 //friend suggestions
@@ -93,5 +93,10 @@ Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destro
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
 
+//news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
 
+
+Route::put('news-feed/approve/{id}', 'App\Http\Controllers\NewsFeedController@approve');
+Route::put('news-feed/reject/{id}', 'App\Http\Controllers\NewsFeedController@reject');
+Route::get('news-feed/pending', 'App\Http\Controllers\NewsFeedController@pending');

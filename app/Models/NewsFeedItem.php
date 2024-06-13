@@ -5,8 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class NewsFeedItem extends Model
+
 {
-    protected $fillable = ['title','content', 'user_id','category','views', 'likes', 'comments', 'shares', 'recency_factor'];
+    use Moderatable;
+
+    protected $fillable = ['title','content', 'user_id','category','views', 'likes', 'comments', 'shares', 'recency_factor','status'];
 
     public function user()
     {    

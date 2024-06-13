@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
+use Hootlex\Moderation\Moderation;
 
 class NewsFeedController extends Controller
 {
@@ -115,7 +116,38 @@ class NewsFeedController extends Controller
     return response()->json($newsFeedItems);
     }
     
+    public function approve($id)
+    {
+        try {
+            $newsFeedItem = NewsFeedItem::findOrFail($id);
+            $newsFeedItem->status = 'approved';
+            $newsFeedItem->save();
     
+            return response()->json(['message' => 'News feed item approved successfully']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        }
+    }
+
+    public function reject($id)
+{
+    try {
+        $newsFeedItem = NewsFeedItem::findOrFail($id);
+        $newsFeedItem->status = 'rejected';
+        $newsFeedItem->save();
+
+        return response()->json(['message' => 'News feed item rejected successfully']);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json(['message' => 'News feed item not found'], 404);
+    }
+}
+
+    public function pending()
+    {
+        $pendingItems = NewsFeedItem::where('status', 'pending')->get();
+
+        return response()->json(['data' => $pendingItems]);
+    }
 
     
 }

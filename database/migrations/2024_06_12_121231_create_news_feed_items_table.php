@@ -19,6 +19,8 @@ class CreateNewsFeedItemsTable extends Migration
             $table->integer('comments')->default(0);
             $table->integer('shares')->default(0);
             $table->timestamp('recency_factor')->nullable();
+            $table->string('status')->default('pending');
+
             $table->timestamps();
         });
     }
