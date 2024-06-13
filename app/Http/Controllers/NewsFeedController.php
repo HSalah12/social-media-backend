@@ -7,18 +7,36 @@ namespace App\Http\Controllers;
 use App\Models\NewsFeedItem;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Services\NewsAggregatorService;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Cache;
 
 class NewsFeedController extends Controller
 {
 
     
-    public function index()
+    public function index(Request $request)
     {
-        $newsFeedItems = NewsFeedItem::with('user')->get();
-        return response()->json($newsFeedItems);
-    }
+        $viewWeight = 1;
+        $likeWeight = 2;
+        $commentWeight = 3;
+        $shareWeight = 4;
+        $recencyWeight = 0.5; // Adjust weights as needed
 
+        $currentTime = now()->timestamp;
+
+        $newsFeedItems = NewsFeedItem::orderBy('created_at', 'desc')->paginate(5);
+
+        $sortedItems = $newsFeedItems->sortByDesc(function ($item) use ($viewWeight, $likeWeight, $commentWeight, $shareWeight, $recencyWeight, $currentTime) {
+            $recencyFactor = $item->recency_factor ? $item->recency_factor->timestamp() : $currentTime;
+            return $item->views * $viewWeight
+                   + $item->likes * $likeWeight
+                   + $item->comments * $commentWeight
+                   + $item->shares * $shareWeight
+                   + ($currentTime - $recencyFactor) * $recencyWeight;
+        });
+
+        return response()->json($sortedItems);
+    }
     public function store(Request $request)
 {
     // dd($request->all());
@@ -26,14 +44,20 @@ class NewsFeedController extends Controller
     $request->validate([
         'title' => 'required|string',
         'content' => 'required|string',
+        'category' => 'required|string',
     ]);
 
     try {
         $newsFeedItem = NewsFeedItem::create([
             'title' => $request->input('title'),
             'content' => $request->input('content'),
+            'category' => $request->input('category'),
             'user_id' => $request->user()->id,
         ]);
+
+          // Invalidate the cache
+        Cache::forget('news_feed_items');
+
 
         return response()->json($newsFeedItem->load('user'), 200);
     } catch (\Exception $e) {
@@ -78,11 +102,20 @@ class NewsFeedController extends Controller
             return response()->json(['message' => 'News feed item not found'], 404);
         }
     }
-    public function aggregate()
+    public function filter(Request $request)
     {
-        $newsAggregator = new NewsAggregatorService();
-        $newsAggregator->storeNews();
-        return response()->json(['message' => 'News aggregated successfully']);
+        $category = $request->input('category');
+
+    if ($category) {
+        $newsFeedItems = NewsFeedItem::where('category', $category)->with('user')->get();
+    } else {
+        $newsFeedItems = NewsFeedItem::with('user')->get();
     }
+
+    return response()->json($newsFeedItems);
+    }
+    
+    
+
     
 }

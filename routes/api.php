@@ -93,3 +93,5 @@ Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destro
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
 
+Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
+

@@ -12,7 +12,13 @@ class CreateNewsFeedItemsTable extends Migration
             $table->id();
             $table->string('title')->nullable();
             $table->text('content');
+            $table->string('category')->nullable();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->integer('views')->default(0);
+            $table->integer('likes')->default(0);
+            $table->integer('comments')->default(0);
+            $table->integer('shares')->default(0);
+            $table->timestamp('recency_factor')->nullable();
             $table->timestamps();
         });
     }
