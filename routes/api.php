@@ -96,7 +96,7 @@ Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middl
 //news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
 
-
+//news-feed approve-reject-pending
 Route::put('news-feed/approve/{id}', 'App\Http\Controllers\NewsFeedController@approve');
 Route::put('news-feed/reject/{id}', 'App\Http\Controllers\NewsFeedController@reject');
 Route::get('news-feed/pending', 'App\Http\Controllers\NewsFeedController@pending');
