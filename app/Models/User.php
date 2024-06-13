@@ -80,7 +80,7 @@ class User extends Authenticatable implements HasMedia
     }
     public function followRequests()
     {
-        return $this->hasMany(FollowRequest::class, 'user_id');
+        return $this->hasMany(FollowRequest::class, 'user_id','followed_id');
     }
     
     public function followerRequests()

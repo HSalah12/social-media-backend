@@ -12,6 +12,7 @@ use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\NewsFeedController;
 
 
+Auth::routes();   
 // register
 Route::post('register', 'App\Http\Controllers\Auth\RegisterController@register');
 
@@ -64,8 +65,6 @@ Route::post('/profile/deactivate', 'App\Http\Controllers\UserProfileController@d
 Route::get('/profile-interactions', 'App\Http\Controllers\ProfileInteractionController@index')->middleware('auth:api');
 Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionController@store')->middleware('auth:api');
 
-Auth::routes();   
-
 // follow-status & friend-status
 Route::get('users/follow-status/{followerId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
@@ -83,7 +82,6 @@ Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')
 
 //privacy-settings
 Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
-
 
 //news-feed
 Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');

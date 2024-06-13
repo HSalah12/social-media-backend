@@ -8,7 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class FollowRequest extends Model
 {
-    protected $fillable = ['user_id', 'follower_id', 'status'];
+    protected $fillable = [
+
+        'user_id',
+
+        'follower_id',
+
+        'followed_id',
+
+        'status'
+
+        ];
 
     public function user()
     {

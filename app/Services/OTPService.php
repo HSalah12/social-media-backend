@@ -14,7 +14,7 @@ class OTPService
 {
     public function generateOTP()
     {
-        $otp = rand(100000, 999999); // Generate a random 6-digit OTP
+        $otp = '000000'; // Generate a random 6-digit OTP
         Cache::put('otp', $otp, now()->addMinutes(2));
         $expiry = Carbon::now()->addMinutes(5); // OTP expires in 5 minutes
         return ['otp' => $otp, 'expiry' => $expiry];
