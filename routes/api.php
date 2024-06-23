@@ -98,3 +98,9 @@ Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter'
 Route::put('news-feed/approve/{id}', 'App\Http\Controllers\NewsFeedController@approve');
 Route::put('news-feed/reject/{id}', 'App\Http\Controllers\NewsFeedController@reject');
 Route::get('news-feed/pending', 'App\Http\Controllers\NewsFeedController@pending');
+
+//news-feed share
+Route::post('/newsfeed/{id}/share', 'App\Http\Controllers\NewsFeedController@share')->middleware('auth:api');
+
+//news-feed shared
+Route::get('/news-feed/shared', [NewsFeedController::class, 'getSharedContent']);

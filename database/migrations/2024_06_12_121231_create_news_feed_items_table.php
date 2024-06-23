@@ -18,6 +18,8 @@ class CreateNewsFeedItemsTable extends Migration
             $table->integer('likes')->default(0);
             $table->integer('comments')->default(0);
             $table->integer('shares')->default(0);
+            $table->boolean('shared')->default(false);
+            $table->string('image')->nullable();
             $table->timestamp('recency_factor')->nullable();
             $table->string('status')->default('pending');
 

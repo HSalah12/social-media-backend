@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Hootlex\Moderation\Moderation;
+use Illuminate\Support\Facades\Storage;
 
 class NewsFeedController extends Controller
 {
@@ -39,34 +40,39 @@ class NewsFeedController extends Controller
         return response()->json($sortedItems);
     }
     public function store(Request $request)
-{
-    // dd($request->all());
-
-    $request->validate([
-        'title' => 'required|string',
-        'content' => 'required|string',
-        'category' => 'required|string',
-    ]);
-
-    try {
-        $newsFeedItem = NewsFeedItem::create([
-            'title' => $request->input('title'),
-            'content' => $request->input('content'),
-            'category' => $request->input('category'),
-            'user_id' => $request->user()->id,
+    {
+        $request->validate([
+            'title' => 'required|string',
+            'content' => 'required|string',
+            'category' => 'required|string',
+            'image' => 'nullable|image|max:2048', // Validate image file
         ]);
-
-          // Invalidate the cache
-        Cache::forget('news_feed_items');
-
-
-        return response()->json($newsFeedItem->load('user'), 200);
-    } catch (\Exception $e) {
-        // Log the exception for debugging
-        \Log::error('Error saving news feed item: ' . $e->getMessage());
-        return response()->json(['message' => 'Failed to save news feed item.'], 500);
+    
+        try {
+            $imagePath = null;
+    
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('news_images', 'public');
+            }
+    
+            $newsFeedItem = NewsFeedItem::create([
+                'title' => $request->input('title'),
+                'content' => $request->input('content'),
+                'category' => $request->input('category'),
+                'user_id' => $request->user()->id,
+                'image' => $imagePath,
+            ]);
+    
+            // Invalidate the cache
+            Cache::forget('news_feed_items');
+    
+            return response()->json($newsFeedItem->load('user'), 200);
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            \Log::error('Error saving news feed item: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to save news feed item.'], 500);
+        }
     }
-}
 
     public function update(Request $request, $id)
     {
@@ -150,4 +156,49 @@ class NewsFeedController extends Controller
     }
 
     
+    public function share(Request $request, $id)
+    {
+        try {
+            // Find the news feed item by ID
+            $newsFeedItem = NewsFeedItem::findOrFail($id);
+    
+            // Check if the user has permission to share the content
+            if (!$this->canShare($request->user(), $newsFeedItem)) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+    
+            // Increment the share count
+            $newsFeedItem->increment('shares');
+            $newsFeedItem->shared = '1';
+
+            // Save the updated item
+            $newsFeedItem->save();
+    
+            // Return the updated news feed item
+            return response()->json(['message' => 'Content shared successfully', 'data' => $newsFeedItem], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            \Log::error('Error sharing news feed item: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to share content'], 500);
+        }
+    }
+    
+
+private function canShare($user, $newsFeedItem)
+{
+   
+    // Example permission check: Only the owner or admin can share
+    return $user->id === $newsFeedItem->user_id || $user->hasRole('admin');
+}
+
+public function getSharedContent(Request $request)
+{
+    // Retrieve shared content from the database
+    $sharedContent = NewsFeedItem::where('shared', true)->with('user')->paginate(5);
+
+    return response()->json($sharedContent);
+}
+
 }

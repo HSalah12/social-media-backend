@@ -9,7 +9,19 @@ class NewsFeedItem extends Model
 {
     use Moderatable;
 
-    protected $fillable = ['title','content', 'user_id','category','views', 'likes', 'comments', 'shares', 'recency_factor','status'];
+    protected $fillable = [
+        'title',
+        'content',
+        'image',
+        'user_id',
+        'category',
+        'views',
+        'likes',
+        'comments',
+        'shares',
+        'recency_factor',
+        'status'
+    ];
 
     public function user()
     {    
