@@ -31,12 +31,16 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
         ];
     }
+    public function likedNewsFeedItems()
+    {
+        return $this->belongsToMany(NewsFeedItem::class, 'likes', 'user_id', 'news_feed_item_id');
+    }
  public function setPrivacySettings($settings)
     {
         $this->privacy_settings = $settings;
         $this->save();
     }
-
+    
     public function getPrivacySettings()
     {
         return $this->privacy_settings ?? [];

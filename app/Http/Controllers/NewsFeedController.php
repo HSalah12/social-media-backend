@@ -5,12 +5,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\NewsFeedItem;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Hootlex\Moderation\Moderation;
 use Illuminate\Support\Facades\Storage;
+
+use Auth;
 
 class NewsFeedController extends Controller
 {
@@ -201,4 +204,100 @@ public function getSharedContent(Request $request)
     return response()->json($sharedContent);
 }
 
+
+
+public function like($newsFeedItemId)
+    {
+        $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
+
+        // Check if the user has already liked the news feed item
+        if ($newsFeedItem->likes()->where('user_id', Auth::id())->exists()) {
+            return response()->json(['message' => 'News feed item already liked'], 400);
+        }
+
+        // Increment the likes count in the news feed item
+        $newsFeedItem->increment('likes');
+
+        // Attach the like to the news feed item
+        $newsFeedItem->likes()->attach(Auth::id());
+
+        return response()->json(['message' => 'News feed item liked']);
+    }
+
+    public function unlike($newsFeedItemId)
+    {
+        $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
+
+        // Check if the user has not liked the news feed item
+        if (!$newsFeedItem->likes()->where('user_id', Auth::id())->exists()) {
+            return response()->json(['message' => 'News feed item not liked'], 400);
+        }
+
+        // Decrement the likes count in the news feed item
+        $newsFeedItem->decrement('likes');
+
+        // Detach the like from the news feed item
+        $newsFeedItem->likes()->detach(Auth::id());
+
+        return response()->json(['message' => 'News feed item unliked']);
+    }
+    public function comment(Request $request, $newsFeedItemId)
+    {
+        // Create a new comment
+    $comment = new Comment();
+    $comment->content = $request->input('content');
+    $comment->user_id = $request->user()->id; // Assuming you're using authentication
+    $comment->news_feed_item_id = $newsFeedItemId;
+    $comment->save();
+
+    // Update the comments count in the news_feed_items table
+    $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
+    if ($newsFeedItem) {
+        $newsFeedItem->increment('comments');
+    }
+
+    return response()->json($comment, 200);
+    }
+    
+    public function deleteComment(Request $request, $commentId)
+    {
+        // Find the comment
+        $comment = Comment::find($commentId);
+    
+        // Ensure the comment exists
+        if (!$comment) {
+            return response()->json(['message' => 'Comment not found'], 404);
+        }
+    
+        // Get the associated news feed item
+        $newsFeedItemId = $comment->news_feed_item_id;
+        $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
+    
+        // Delete the comment
+        $comment->delete();
+    
+        // Decrement the comments count in the news_feed_items table
+        if ($newsFeedItem) {
+            $newsFeedItem->decrement('comments');
+        }
+    
+        return response()->json(['message' => 'Comment deleted'], 200);
+    }
+
+    public function getCommentsForNewsFeedItem($newsFeedItemId)
+    {
+        $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
+    
+        if (!$newsFeedItem) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        }
+    
+        $comments = Comment::where('news_feed_item_id', $newsFeedItemId)
+                    ->leftJoin('users', 'comments.user_id', '=', 'users.id')
+                    ->select('comments.*', 'users.name as user_name')
+                    ->get();
+    
+        return response()->json($comments, 200);
+    }
+    
 }

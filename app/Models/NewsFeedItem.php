@@ -33,4 +33,11 @@ class NewsFeedItem extends Model
 {
     return (0.3 * $this->views) + (0.5 * $this->likes) + (0.7 * $this->comments) + (0.8 * $this->shares) + (0.6 * $this->recency_factor);
 }
+
+public function likes()
+{
+    return $this->belongsToMany(User::class, 'likes', 'news_feed_item_id', 'user_id');
+}
+
+
 }

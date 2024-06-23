@@ -10,7 +10,7 @@ use App\Http\Controllers\FollowRequestController;
 use App\Http\Controllers\FriendSuggestionController;
 use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\NewsFeedController;
-
+use App\Http\Controllers\MessageController;
 
 Auth::routes();   
 // register
@@ -104,3 +104,26 @@ Route::post('/newsfeed/{id}/share', 'App\Http\Controllers\NewsFeedController@sha
 
 //news-feed shared
 Route::get('/news-feed/shared', 'App\Http\Controllers\NewsFeedController@getSharedContent')->middleware('auth:api');
+
+//news-feed like
+Route::post('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@like')->name('content.like');
+
+//news-feed unlike
+Route::delete('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@unlike')->name('content.unlike');
+
+//news-feed comments
+Route::post('/news-feed/{id}/comment', 'App\Http\Controllers\NewsFeedController@comment');
+Route::get('/news-feed-items/{news_feed_item_id}/comments', 'App\Http\Controllers\NewsFeedController@getCommentsForNewsFeedItem');
+Route::delete('comments/{id}', 'App\Http\Controllers\NewsFeedController@deleteComment')->middleware('auth:api');
+
+
+
+//messages
+Route::post('conversations', 'App\Http\Controllers\ConversationController@createConversation')->middleware('auth:api');
+Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage')->middleware('auth:api');
+Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages')->middleware('auth:api');
+
+//group-chats
+Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create');
+Route::post('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@sendMessage');
+Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@getMessages');
