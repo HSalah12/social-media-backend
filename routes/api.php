@@ -103,4 +103,4 @@ Route::get('news-feed/pending', 'App\Http\Controllers\NewsFeedController@pending
 Route::post('/newsfeed/{id}/share', 'App\Http\Controllers\NewsFeedController@share')->middleware('auth:api');
 
 //news-feed shared
-Route::get('/news-feed/shared', [NewsFeedController::class, 'getSharedContent']);
+Route::get('/news-feed/shared', 'App\Http\Controllers\NewsFeedController@getSharedContent')->middleware('auth:api');
