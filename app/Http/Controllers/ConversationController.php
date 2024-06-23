@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Crypt;
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
@@ -35,14 +36,19 @@ class ConversationController extends Controller
             'message' => 'required|string',
         ]);
     
-        $message = Message::create([
-            'conversation_id' => $validated['conversation_id'],
-            'sender_id' => $validated['sender_id'],
-            'receiver_id' => $validated['receiver_id'],
-            'message' => $validated['message'],
-        ]);
+        $encryptedMessage = Crypt::encrypt($validated['message']);
+
+    $message = Message::create([
+        'conversation_id' => $validated['conversation_id'],
+        'sender_id' => $validated['sender_id'],
+        'receiver_id' => $validated['receiver_id'],
+        'message' => $encryptedMessage,
+    ]);
     
-        return response()->json($message, 201);
+        return response()->json([
+        'data' => $message, // Encrypted message
+        'decrypted_message' => $validated['message'], // Original, unencrypted message
+    ], 201);
     }
     
 

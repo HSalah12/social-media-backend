@@ -124,6 +124,6 @@ Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationContr
 Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages')->middleware('auth:api');
 
 //group-chats
-Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create');
-Route::post('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@sendMessage');
-Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@getMessages');
+Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->middleware('auth:api');
+Route::post('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@sendMessage')->middleware('auth:api');
+Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@getMessages')->middleware('auth:api');
