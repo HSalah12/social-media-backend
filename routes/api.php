@@ -20,7 +20,7 @@ Route::post('register', 'App\Http\Controllers\Auth\RegisterController@register')
 Route::post('login', 'App\Http\Controllers\Auth\LoginController@login');
 
 // logout
-Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
+Route::post('/logout', 'App\Http\Controllers\Auth\LogoutController@logout')->middleware('auth:api');
 
 // verify
 Route::post('/verify', 'App\Http\Controllers\Auth\VerificationController@verify')->Middleware('verify_token');

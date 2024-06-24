@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Hash;
+use App\Models\UserStatus;
+use Illuminate\Support\Facades\Log;
 
 class LoginController extends Controller
 {
@@ -25,6 +27,21 @@ class LoginController extends Controller
 
             $token = $user->createToken('myToken')->accessToken;
             $user->update(['active' => true]);
+            
+            // Log user login for debugging
+            Log::info('User logged in', ['user_id' => $user->id]);
+
+            // Update user status
+            $userStatus = UserStatus::updateOrCreate(
+                ['user_id' => $user->id],
+                ['status' => 'online', 'last_seen_at' => now()]
+            );
+
+            if (!$userStatus) {
+                // Log status update failure for debugging
+                Log::error('Failed to update user status', ['user_id' => $user->id]);
+            }
+
             return response()->json([
                 'message' => 'Login successful',
                 'user' => $user,
@@ -38,4 +55,3 @@ class LoginController extends Controller
         ], 401);
     }
 }
-

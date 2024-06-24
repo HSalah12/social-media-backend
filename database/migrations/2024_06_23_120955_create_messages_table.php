@@ -12,13 +12,11 @@ class CreateMessagesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('conversation_id')->nullable();
             $table->unsignedBigInteger('sender_id')->nullable();
-            $table->unsignedBigInteger('receiver_id')->default(0); 
+            $table->unsignedBigInteger('receiver_id')->nullable(); 
             $table->timestamps();
             $table->text('message'); 
-          
             $table->unsignedBigInteger('group_chat_id')->nullable();
             $table->foreign('group_chat_id')->references('id')->on('group_chats')->onDelete('cascade');
-
              $table->foreign('conversation_id')->references('id')->on('conversations')->onDelete('cascade');
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');

@@ -28,33 +28,57 @@ class ConversationController extends Controller
     }
 
     public function sendMessage(Request $request)
-    {
-        $validated = $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'sender_id' => 'required|exists:users,id',
-            'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
-        ]);
-    
-        $encryptedMessage = Crypt::encrypt($validated['message']);
+{
+    $validated = $request->validate([
+        'conversation_id' => 'required|exists:conversations,id',
+        'sender_id' => 'required|exists:users,id',
+        'receiver_id' => 'required|exists:users,id',
+        'message' => 'required|string',
+    ]);
+
+    $encryptedMessage = Crypt::encryptString($validated['message']);
 
     $message = Message::create([
         'conversation_id' => $validated['conversation_id'],
         'sender_id' => $validated['sender_id'],
         'receiver_id' => $validated['receiver_id'],
         'message' => $encryptedMessage,
+        'is_delivered' => false, // Default value is false
     ]);
-    
-        return response()->json([
+
+    // Code to send notification to the receiver (e.g., via websockets, push notification, etc.)
+
+    return response()->json([
         'data' => $message, // Encrypted message
         'decrypted_message' => $validated['message'], // Original, unencrypted message
     ], 201);
-    }
+}
     
 
     public function getMessages($conversationId)
-    {
-        $messages = Message::where('conversation_id', $conversationId)->get();
-        return response()->json($messages, 200);
-    }
+{
+    $messages = Message::where('conversation_id', $conversationId)->get();
+
+    $messagesWithDecryption = $messages->map(function ($message) {
+        try {
+            $decryptedMessage = Crypt::decryptString($message->message);
+        } catch (\Exception $e) {
+            \Log::error('Decryption failed for message ID: ' . $message->id . '. Error: ' . $e->getMessage());
+            $decryptedMessage = null;
+        }
+
+        return [
+            'id' => $message->id,
+            'conversation_id' => $message->conversation_id,
+            'sender_id' => $message->sender_id,
+            'receiver_id' => $message->receiver_id,
+            'encrypted_message' => $message->message,
+            'decrypted_message' => $decryptedMessage,
+            'created_at' => $message->created_at,
+            'updated_at' => $message->updated_at,
+        ];
+    });
+
+    return response()->json($messagesWithDecryption, 200);
+}
 }

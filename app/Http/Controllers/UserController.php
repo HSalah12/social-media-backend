@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\UserStatus;
+
 use DB ;
 
 class UserController extends Controller
@@ -56,6 +58,12 @@ class UserController extends Controller
         $isFriend = $user->isFriendWith($friend);
 
         return response()->json(['isFriend' => $isFriend]);
+    }
+    public function getOnlineUsers()
+    {
+        $onlineUsers = UserStatus::getOnlineUsers();
+
+        return response()->json(['online_users' => $onlineUsers]);
     }
 }
 
