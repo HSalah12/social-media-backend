@@ -7,7 +7,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Log;
 class ConversationController extends Controller
 {
     public function createConversation(Request $request)
@@ -93,6 +93,17 @@ public function search(Request $request)
 
     $messages = Message::searchAndFilter($filters)->get();
 
+    // Decrypt messages
+    $messages->each(function ($message) {
+        try {
+            $message->message = decrypt($message->message);
+        } catch (\Exception $e) {
+            // Handle decryption error
+            Log::error('Decryption failed for message ID: ' . $message->id);
+        }
+    });
+
     return response()->json($messages);
 }
+
 }
