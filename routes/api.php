@@ -127,3 +127,7 @@ Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\Conv
 Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->middleware('auth:api');
 Route::post('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@sendMessage')->middleware('auth:api');
 Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@getMessages')->middleware('auth:api');
+
+
+//chats search
+Route::get('/messages/search', 'App\Http\Controllers\ConversationController@search')->middleware('auth:api');

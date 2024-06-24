@@ -27,4 +27,19 @@ class Message extends Model
     {
         return $this->belongsTo(GroupChat::class);
     }
+
+    public function scopeSearchAndFilter($query, $filters)
+    {
+        $query->when($filters['keyword'], function ($query, $keyword) {
+            $query->where('content', 'like', '%' . $keyword . '%');
+        })->when($filters['sender_id'], function ($query, $senderId) {
+            $query->where('sender_id', $senderId);
+        })->when($filters['receiver_id'], function ($query, $receiverId) {
+            $query->where('receiver_id', $receiverId);
+        })->when($filters['start_date'], function ($query, $startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        })->when($filters['end_date'], function ($query, $endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        });
+    }
 }

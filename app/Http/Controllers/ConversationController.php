@@ -81,4 +81,18 @@ class ConversationController extends Controller
 
     return response()->json($messagesWithDecryption, 200);
 }
+public function search(Request $request)
+{
+    $filters = [
+        'keyword' => $request->input('keyword', ''),
+        'sender_id' => $request->input('sender_id', null),
+        'receiver_id' => $request->input('receiver_id', null),
+        'start_date' => $request->input('start_date', null),
+        'end_date' => $request->input('end_date', null),
+    ];
+
+    $messages = Message::searchAndFilter($filters)->get();
+
+    return response()->json($messages);
+}
 }
