@@ -31,6 +31,16 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
         ];
     }
+
+    public function getProfilePictureUrlAttribute()
+    {
+        return $this->profile_picture ? Storage::url($this->profile_picture) : null;
+    }
+
+    public function getCoverPhotoUrlAttribute()
+    {
+        return $this->cover_photo ? Storage::url($this->cover_photo) : null;
+    }
     public function likedNewsFeedItems()
     {
         return $this->belongsToMany(NewsFeedItem::class, 'likes', 'user_id', 'news_feed_item_id');

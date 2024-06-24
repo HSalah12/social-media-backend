@@ -40,7 +40,7 @@ Route::post('/forget-password/resendotp', 'App\Http\Controllers\Auth\ForgotPassw
 Route::post('/profile', [UserProfileController::class, 'store']);
 
 // update profile
-Route::put('/users', 'App\Http\Controllers\UserController@update')->middleware('auth:api');
+Route::post('/users', 'App\Http\Controllers\UserController@update')->middleware('auth:api');
 
 // Return profile Data
 Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@show')->middleware('auth:api');;
