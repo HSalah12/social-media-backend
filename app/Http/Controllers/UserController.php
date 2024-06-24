@@ -5,15 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserStatus;
+use Auth;
 
 use DB ;
 
 class UserController extends Controller
 {
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        $user = User::findOrFail($id);
-
+        // $user = User::findOrFail($id);
+        $user = Auth::user();
         $validatedData = $request->validate([
             'name' => 'string|max:255',
             'username' => 'string|max:255|unique:users,username,' . $user->id,
@@ -38,6 +39,7 @@ class UserController extends Controller
             'favorite_quotes' => 'nullable|string',
             'education_history' => 'nullable|string',
             'employment_history' => 'nullable|string',
+            'cover_photo' => 'nullable|string',
             'relationship_status' => 'nullable|in:0,1,2,3,4,5',
             'activity_engagement' => 'nullable|string',
             'notification_preferences' => 'nullable|json',

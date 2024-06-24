@@ -24,6 +24,8 @@ class CreateNewsFeedItemsTable extends Migration
             $table->string('status')->default('pending');
 
             $table->timestamps();
+
+            $table->fullText(['title', 'content']);
         });
     }
 

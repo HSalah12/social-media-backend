@@ -11,6 +11,8 @@ use App\Http\Controllers\FriendSuggestionController;
 use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\NewsFeedController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\SearchController;
+
 
 Auth::routes();   
 // register
@@ -38,7 +40,7 @@ Route::post('/forget-password/resendotp', 'App\Http\Controllers\Auth\ForgotPassw
 Route::post('/profile', [UserProfileController::class, 'store']);
 
 // update profile
-Route::put('/users/{id}', 'App\Http\Controllers\UserController@update')->middleware('auth:api');
+Route::put('/users', 'App\Http\Controllers\UserController@update')->middleware('auth:api');
 
 // Return profile Data
 Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@show')->middleware('auth:api');;
@@ -131,3 +133,9 @@ Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatC
 
 //chats search
 Route::get('/messages/search', 'App\Http\Controllers\ConversationController@search')->middleware('auth:api');
+
+//online-users
+Route::get('online-users', 'App\Http\Controllers\UserController@getOnlineUsers');
+
+// search indexing
+Route::get('/search', 'App\Http\Controllers\SearchController@search')->name('api.search');
