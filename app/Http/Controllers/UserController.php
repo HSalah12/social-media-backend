@@ -68,7 +68,43 @@ class UserController extends Controller
 
         $user->update($validatedData);
 
-        return response()->json(['message' => 'User data updated successfully', 'user' => $user]);
+        $user->refresh(); // Ensure the updated user object is fetched
+
+        return response()->json([
+            'message' => 'User data updated successfully',
+            'user' => [
+                'profile_picture_url' => $user->profile_picture_url,
+                'cover_photo_url' => $user->cover_photo_url,
+                'name' => $user->name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'date_of_birth' => $user->date_of_birth,
+                'gender' => $user->gender,
+                'city' => $user->city,
+                'state' => $user->state,
+                'country' => $user->country,
+                'bio' => $user->bio,
+                'phone_number' => $user->phone_number,
+                'website_url' => $user->website_url,
+                'social_media_links' => $user->social_media_links,
+                'visibility_settings' => $user->visibility_settings,
+                'privacy_settings' => $user->privacy_settings,
+                'hobbies' => $user->hobbies,
+                'favorite_books' => $user->favorite_books,
+                'favorite_movies' => $user->favorite_movies,
+                'favorite_music' => $user->favorite_music,
+                'languages_spoken' => $user->languages_spoken,
+                'favorite_quotes' => $user->favorite_quotes,
+                'education_history' => $user->education_history,
+                'employment_history' => $user->employment_history,
+                'relationship_status' => $user->relationship_status,
+                'activity_engagement' => $user->activity_engagement,
+                'notification_preferences' => $user->notification_preferences,
+                'security_settings' => $user->security_settings,
+                'achievements' => $user->achievements,
+                'badges' => $user->badges,
+            ]
+        ]);
     }
 
     public function friendStatus($userId, $friendId)

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use Illuminate\Support\Facades\Storage; 
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Support\Facades\Cache;
@@ -34,12 +35,12 @@ class User extends Authenticatable implements HasMedia
 
     public function getProfilePictureUrlAttribute()
     {
-        return $this->profile_picture ? Storage::url($this->profile_picture) : null;
+        return $this->profile_picture ? asset(Storage::url($this->profile_picture)) : null;
     }
-
+    
     public function getCoverPhotoUrlAttribute()
     {
-        return $this->cover_photo ? Storage::url($this->cover_photo) : null;
+        return $this->cover_photo ? asset(Storage::url($this->cover_photo)) : null;
     }
     public function likedNewsFeedItems()
     {
