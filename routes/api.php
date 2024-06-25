@@ -12,7 +12,8 @@ use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\NewsFeedController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SearchController;
-
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\SearchLogController;
 
 Auth::routes();   
 // register
@@ -118,8 +119,6 @@ Route::post('/news-feed/{id}/comment', 'App\Http\Controllers\NewsFeedController@
 Route::get('/news-feed-items/{news_feed_item_id}/comments', 'App\Http\Controllers\NewsFeedController@getCommentsForNewsFeedItem');
 Route::delete('comments/{id}', 'App\Http\Controllers\NewsFeedController@deleteComment')->middleware('auth:api');
 
-
-
 //messages
 Route::post('conversations', 'App\Http\Controllers\ConversationController@createConversation')->middleware('auth:api');
 Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage')->middleware('auth:api');
@@ -130,7 +129,6 @@ Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->
 Route::post('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@sendMessage')->middleware('auth:api');
 Route::get('/group-chats/{groupChat}/messages', 'App\Http\Controllers\GroupChatController@getMessages')->middleware('auth:api');
 
-
 //chats search
 Route::get('/messages/search', 'App\Http\Controllers\ConversationController@search')->middleware('auth:api');
 
@@ -140,3 +138,14 @@ Route::get('online-users', 'App\Http\Controllers\UserController@getOnlineUsers')
 // search indexing
 Route::get('/search', 'App\Http\Controllers\SearchController@search')->name('api.search');
 Route::get('/search/suggestions', 'App\Http\Controllers\SearchController@suggestions');
+
+//  content recommendation algorithms
+Route::get('/recommendations', 'App\Http\Controllers\RecommendationController@getRecommendations')->middleware('auth:api');
+
+// search-log-analysis & geolocation recommendation algorithms
+Route::get('/recommendations/geolocation', 'App\Http\Controllers\RecommendationController@getGeolocationRecommendations')->middleware('auth:api');
+Route::get('/search-log-analysis', 'App\Http\Controllers\SearchLogController@index')->middleware('auth:api');
+
+//  trending-popular-content
+Route::get('/trending-content', 'App\Http\Controllers\NewsFeedController@getTrendingContent')->middleware('auth:api');
+Route::get('/popular-content', 'App\Http\Controllers\NewsFeedController@getPopularContent')->middleware('auth:api');

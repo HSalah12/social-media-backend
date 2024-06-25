@@ -12,8 +12,9 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Hootlex\Moderation\Moderation;
 use Illuminate\Support\Facades\Storage;
-
+use Carbon\Carbon;
 use Auth;
+use Log;
 
 class NewsFeedController extends Controller
 {
@@ -304,5 +305,40 @@ public function like($newsFeedItemId)
     
         return response()->json($comments, 200);
     }
-    
+    public function getTrendingContent(Request $request)
+    {
+        $trendingContent = Cache::remember('trending_content', 60, function () {
+            return NewsFeedItem::where('created_at', '>=', Carbon::now()->subDay())
+                ->orderByRaw('(views + likes + comments + shares) DESC')
+                ->take(10)
+                ->get();
+        });
+
+        Log::info('Trending Content Retrieved', ['count' => $trendingContent->count()]);
+
+        // Add image_url to each item
+        $trendingContent->each(function($item) {
+            $item->image_url = $item->image_url;
+        });
+
+        return response()->json($trendingContent);
+    }
+
+    public function getPopularContent(Request $request)
+    {
+        $popularContent = Cache::remember('popular_content', 60, function () {
+            return NewsFeedItem::orderByRaw('(views + likes + comments + shares) DESC')
+                ->take(10)
+                ->get();
+        });
+
+        Log::info('Popular Content Retrieved', ['count' => $popularContent->count()]);
+
+        // Add image_url to each item
+        $popularContent->each(function($item) {
+            $item->image_url = $item->image_url;
+        });
+
+        return response()->json($popularContent);
+    }
 }

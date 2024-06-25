@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Cache;
 use Str;
 use Spatie\Permission\Traits\HasRoles;
 
-
 class User extends Authenticatable implements HasMedia
 {
     use HasFactory, Notifiable, HasApiTokens, InteractsWithMedia, HasRoles;
@@ -33,6 +32,11 @@ class User extends Authenticatable implements HasMedia
         ];
     }
 
+    public function interactions()
+    {
+        return $this->hasMany(UserInteraction::class);
+    }
+
     public function getProfilePictureUrlAttribute()
     {
         return $this->profile_picture ? asset(Storage::url($this->profile_picture)) : null;
@@ -46,7 +50,8 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->belongsToMany(NewsFeedItem::class, 'likes', 'user_id', 'news_feed_item_id');
     }
- public function setPrivacySettings($settings)
+    
+    public function setPrivacySettings($settings)
     {
         $this->privacy_settings = $settings;
         $this->save();

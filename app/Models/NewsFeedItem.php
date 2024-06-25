@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class NewsFeedItem extends Model
 
@@ -20,7 +22,9 @@ class NewsFeedItem extends Model
         'comments',
         'shares',
         'recency_factor',
-        'status'
+        'status',
+        'latitude',
+        'longitude',
     ];
 
     public function user()
@@ -38,6 +42,13 @@ public function likes()
 {
     return $this->belongsToMany(User::class, 'likes', 'news_feed_item_id', 'user_id');
 }
-
+public function interactions()
+{
+    return $this->hasMany(UserInteraction::class);
+}
+public function getImageUrlAttribute()
+{
+    return $this->image ? url('storage/' . $this->image) : null;
+}
 
 }

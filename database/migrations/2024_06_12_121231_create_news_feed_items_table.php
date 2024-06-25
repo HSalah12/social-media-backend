@@ -22,6 +22,8 @@ class CreateNewsFeedItemsTable extends Migration
             $table->string('image')->nullable();
             $table->timestamp('recency_factor')->nullable();
             $table->string('status')->default('pending');
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
 
             $table->timestamps();
 
