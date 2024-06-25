@@ -54,4 +54,40 @@ class SearchController extends Controller
         // Return the search results
         return response()->json($results);
     }
+
+    public function suggestions(Request $request)
+    {
+        $query = $request->input('query');
+
+        // Validate the input
+        $request->validate([
+            'query' => 'required|string|max:255',
+        ]);
+
+        // Fetch titles and categories matching the query
+        $titles = NewsFeedItem::where('title', 'LIKE', "%{$query}%")
+            ->select('title')
+            ->distinct()
+            ->limit(10)
+            ->get();
+
+        $categories = NewsFeedItem::where('category', 'LIKE', "%{$query}%")
+            ->select('category')
+            ->distinct()
+            ->limit(10)
+            ->get();
+            
+        $contents = NewsFeedItem::where('content', 'LIKE', "%{$query}%")
+            ->select('content as suggestion', 'title', 'category')
+            ->distinct()
+            ->limit(10)
+            ->get();
+
+        // Merge titles, categories, and contents
+        $suggestions = $titles->merge($categories)->merge($contents);
+       
+
+        // Return the suggestions
+        return response()->json($suggestions);
+    }
 }

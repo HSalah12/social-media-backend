@@ -139,3 +139,4 @@ Route::get('online-users', 'App\Http\Controllers\UserController@getOnlineUsers')
 
 // search indexing
 Route::get('/search', 'App\Http\Controllers\SearchController@search')->name('api.search');
+Route::get('/search/suggestions', 'App\Http\Controllers\SearchController@suggestions');

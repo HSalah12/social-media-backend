@@ -52,10 +52,11 @@ class NewsFeedController extends Controller
         ]);
     
         try {
-            $imagePath = null;
+            $imageUrl = null;
     
             if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('news_images', 'public');
+                $imagePath = $request->file('image')->store('news_photos', 'public');
+                $imageUrl = url(Storage::url($imagePath));
             }
     
             $newsFeedItem = NewsFeedItem::create([
@@ -63,13 +64,17 @@ class NewsFeedController extends Controller
                 'content' => $request->input('content'),
                 'category' => $request->input('category'),
                 'user_id' => $request->user()->id,
-                'image' => $imagePath,
+                'image' => $imageUrl,
             ]);
     
             // Invalidate the cache
             Cache::forget('news_feed_items');
     
-            return response()->json($newsFeedItem->load('user'), 200);
+            return response()->json([
+                'message' => 'News feed item created successfully',
+                'newsFeedItem' => $newsFeedItem->load('user'),
+                'image_url' => $imageUrl,
+            ], 200);
         } catch (\Exception $e) {
             // Log the exception for debugging
             \Log::error('Error saving news feed item: ' . $e->getMessage());
