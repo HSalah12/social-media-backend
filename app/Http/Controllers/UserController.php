@@ -150,6 +150,10 @@ class UserController extends Controller
         // Add other filters as needed
 
         $users = $query->get();
+         // Check if the result is empty
+         if ($users->isEmpty()) {
+            return response()->json(['message' => 'No user found','users' => $users, 'total' => 0], 404);
+        }
         $users->each(function ($user) {
             $user->makeHidden('profile_picture');
         });
@@ -162,6 +166,12 @@ class UserController extends Controller
         $users->each(function ($user) {
             $user->cover_photo_url = $user->cover_photo_url;
         });
-        return response()->json($users);
+        return response()->json([
+            'message' => 'Results :',
+            'users' => $users,
+             'total' => $users->count(),
+            ]
+            
+            ,200);
     }
 }
