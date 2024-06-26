@@ -123,4 +123,45 @@ class UserController extends Controller
 
         return response()->json(['online_users' => $onlineUsers]);
     }
+    public function search(Request $request)
+    {
+        $query = User::query();
+
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        if ($request->has('username')) {
+            $query->where('username', 'like', '%' . $request->input('username') . '%');
+        }
+
+        if ($request->has('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+
+        if ($request->has('city')) {
+            $query->where('city', 'like', '%' . $request->input('city') . '%');
+        }
+
+        if ($request->has('country')) {
+            $query->where('country', 'like', '%' . $request->input('country') . '%');
+        }
+
+        // Add other filters as needed
+
+        $users = $query->get();
+        $users->each(function ($user) {
+            $user->makeHidden('profile_picture');
+        });
+        $users->each(function ($user) {
+            $user->makeHidden('cover_photo');
+        });
+        $users->each(function ($user) {
+            $user->profile_picture_url = $user->profile_picture_url;
+        });
+        $users->each(function ($user) {
+            $user->cover_photo_url = $user->cover_photo_url;
+        });
+        return response()->json($users);
+    }
 }

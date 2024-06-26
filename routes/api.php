@@ -14,6 +14,10 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\SearchLogController;
+use App\Http\Controllers\CountryController;
+use App\Http\Controllers\StateController;
+use App\Http\Controllers\CityController;
+
 
 Auth::routes();   
 // register
@@ -149,3 +153,15 @@ Route::get('/search-log-analysis', 'App\Http\Controllers\SearchLogController@ind
 //  trending-popular-content
 Route::get('/trending-content', 'App\Http\Controllers\NewsFeedController@getTrendingContent')->middleware('auth:api');
 Route::get('/popular-content', 'App\Http\Controllers\NewsFeedController@getPopularContent')->middleware('auth:api');
+
+
+
+Route::get('/search/all', 'App\Http\Controllers\SearchController@searchcities')->middleware('auth:api');
+Route::get('/countries', 'App\Http\Controllers\CountryController@index');
+Route::get('/states', 'App\Http\Controllers\StateController@index');
+Route::get('/cities', 'App\Http\Controllers\CityController@index');
+
+
+//  search-users
+
+Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middleware('auth:api');
