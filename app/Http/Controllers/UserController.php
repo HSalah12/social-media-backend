@@ -124,54 +124,71 @@ class UserController extends Controller
         return response()->json(['online_users' => $onlineUsers]);
     }
     public function search(Request $request)
-    {
-        $query = User::query();
+{
+    $query = User::query();
+    $isEmptySearch = true;  // Initialize as true, indicating no input yet
+    $currentUser = auth()->user(); // Get the authenticated user
 
-        if ($request->has('name')) {
-            $query->where('name', 'like', '%' . $request->input('name') . '%');
+    $filters = ['name', 'username', 'email', 'city', 'country'];  // Define searchable fields
+
+    // Check each filter to see if it's provided and not empty
+    foreach ($filters as $filter) {
+        if ($request->has($filter) && !empty($request->input($filter))) {
+            $query->where($filter, 'like', '%' . $request->input($filter) . '%');
+            $isEmptySearch = false;  // Found valid input, mark as non-empty search
         }
-
-        if ($request->has('username')) {
-            $query->where('username', 'like', '%' . $request->input('username') . '%');
-        }
-
-        if ($request->has('email')) {
-            $query->where('email', 'like', '%' . $request->input('email') . '%');
-        }
-
-        if ($request->has('city')) {
-            $query->where('city', 'like', '%' . $request->input('city') . '%');
-        }
-
-        if ($request->has('country')) {
-            $query->where('country', 'like', '%' . $request->input('country') . '%');
-        }
-
-        // Add other filters as needed
-
-        $users = $query->get();
-         // Check if the result is empty
-         if ($users->isEmpty()) {
-            return response()->json(['message' => 'No user found','users' => $users, 'total' => 0], 404);
-        }
-        $users->each(function ($user) {
-            $user->makeHidden('profile_picture');
-        });
-        $users->each(function ($user) {
-            $user->makeHidden('cover_photo');
-        });
-        $users->each(function ($user) {
-            $user->profile_picture_url = $user->profile_picture_url;
-        });
-        $users->each(function ($user) {
-            $user->cover_photo_url = $user->cover_photo_url;
-        });
-        return response()->json([
-            'message' => 'Results :',
-            'users' => $users,
-             'total' => $users->count(),
-            ]
-            
-            ,200);
     }
+
+    if ($isEmptySearch) {
+        // If all inputs are empty, retrieve last successful search result from session if available
+        if (session()->has('last_search_results')) {
+            $lastResults = session('last_search_results');
+            return response()->json([
+                'message' => 'Results from the last valid search:',
+                'users' => $lastResults['users'],
+                'total' => $lastResults['total']
+            ], 200);
+        } else {
+            // If no previous search is stored, return no results found
+            return response()->json(['message' => 'No previous search data found','users' => [], 'total' => 0], 200);
+        }
+    }
+
+    $users = $query->get();
+
+    // If no users found, respond with no user found
+    if ($users->isEmpty()) {
+        return response()->json(['message' => 'No user found', 'users' => [], 'total' => 0], 200);
+    }
+
+    // Process the users data for response
+    $responseData = $users->map(function ($user) {
+        $user->makeHidden(['profile_picture', 'cover_photo']);
+        $user->profile_picture_url = $user->profile_picture_url;
+        $user->cover_photo_url = $user->cover_photo_url;
+        return $user;
+    });
+  // Enhance each user object to include friendship status
+      // Enhance each user object to include friend and follow status
+    $users->each(function ($user) use ($currentUser) {
+        $user->is_friend = $currentUser->isFriendWith($user);
+        $user->is_followed = $currentUser->isFollowing($user);
+        $user->makeHidden(['profile_picture', 'cover_photo']);
+        $user->profile_picture_url = $user->profile_picture_url;
+        $user->cover_photo_url = $user->cover_photo_url;
+    });
+    // Store the current successful search result in session
+    session(['last_search_results' => [
+        'users' => $responseData,
+        'total' => $users->count()
+    ]]);
+
+    // Return the current search results
+    return response()->json([
+        'message' => 'Results:',
+        'users' => $responseData,
+        'total' => $users->count(),
+    ], 200);
+}
+
 }

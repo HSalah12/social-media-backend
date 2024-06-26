@@ -61,6 +61,11 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->privacy_settings ?? [];
     }
+
+    public function follower()
+{
+    return $this->belongsToMany(User::class, 'followers', 'followed_id', 'user_id');
+}
     public function followers()
     {
         return $this->belongsToMany(User::class, 'follow_requests', 'user_id','follows_user_id', 'followed_id')
@@ -84,12 +89,13 @@ class User extends Authenticatable implements HasMedia
 
     public function followings()
     {
-        return $this->belongsToMany(User::class, 'followers', 'follows_user_id', 'followed_id');
+        return $this->belongsToMany(User::class, 'followers', 'user_id', 'followed_id');
     }
 
     public function isFollowing(User $user)
     {
-        return $this->followings()->where('followed_id', $user->id)->exists();
+        // Ensure you reference 'is_accepted' if that's what you named the column
+        return $this->followings()->where('followed_id', $user->id)->where('is_accepted', true)->exists();
     }
     public function following()
     {
@@ -111,16 +117,16 @@ class User extends Authenticatable implements HasMedia
     }
     
     public function friends()
-    {
-        return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
-            ->wherePivot('is_accepted', true);
-    }
+{
+    return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
+                ->wherePivot('is_accepted', true); // Only consider accepted friendships
+}
 
-    public function isFriendWith(User $user)
-    {
-        return $this->friends()->where('friend_id', $user->id)->exists();
-    }
-
+    public function isFriendWith(User $otherUser)
+{
+    return $this->friends()->where('friend_id', $otherUser->id)->where('is_accepted', true)->exists() ||
+           $otherUser->friends()->where('friend_id', $this->id)->where('is_accepted', true)->exists();
+}
     // Method to get mutual friends
     public function mutualFriends($otherUser)
     {

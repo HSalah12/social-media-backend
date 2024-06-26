@@ -16,8 +16,8 @@ class CreateUsersTable extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            $table->string('profile_picture')->nullable();
-            $table->string('cover_photo')->nullable();
+            $table->string('profile_picture')->default('profile_pictures/Xvk2CoUVKQnxsYeLp6nkzL9uQm3jPE1qs7ogwD2Y.png')->nullable();
+            $table->string('cover_photo')->default('cover_photos/gRVgv71i8TL5KA5KK59yXFqawlOtPg4ly9iAyIbr.jpg')->nullable();    
             $table->string('date_of_birth')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->string('city')->nullable();

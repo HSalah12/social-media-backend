@@ -11,7 +11,7 @@ use App\Events\FollowRequestSent;
 use App\Events\FollowRequestAccepted;
 use App\Events\FollowRequestRejected;
 use App\Events\UserUnfollowed;
-
+use App\Models\Follower;
 class FollowRequestController extends Controller
 {
     public function send(Request $request)
@@ -50,17 +50,21 @@ class FollowRequestController extends Controller
         $user = Auth::user();
         $token = $user->createToken('myToken')->accessToken;
 
-        $followRequest->status = 'accepted';
-        $followRequest->followed_id = $user->id;
-        $followRequest->save();
+        // Update or create the follower relationship in the followers table
+        $follower = Follower::updateOrCreate(
+            [
+                'user_id' => $followRequest->user_id,
+                'followed_id' => $followRequest->followed_id
+            ],
+            [
+                'is_accepted' => true
+            ]
+        );
 
         event(new FollowRequestAccepted($followRequest));
 
-        $user->follows()->attach($followRequest->user_id);
-
         return response()->json(['message' => 'Follow request accepted', 'token' => $token]);
     }
-
     public function reject($id)
     {
         $followRequest = FollowRequest::findOrFail($id);

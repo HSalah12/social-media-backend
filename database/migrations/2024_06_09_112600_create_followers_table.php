@@ -17,9 +17,12 @@ return new class extends Migration
             $table->unsignedBigInteger('followed_id');
             $table->unsignedBigInteger('follows_user_id')->nullable(); // Making it nullable
             $table->timestamps();
-        
+            $table->boolean('is_accepted')->default(false); // using 'is_accepted' instead of 'accepted'
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('followed_id')->references('id')->on('users')->onDelete('cascade');
+            $table->unique(['user_id', 'followed_id']); // Ensure no duplicate follows
+
         });
     }
 
