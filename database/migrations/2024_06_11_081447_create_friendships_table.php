@@ -12,7 +12,7 @@ class CreateFriendshipsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('friend_id');
-            $table->boolean('is_accepted')->default(false);
+            $table->string('status')->default('pending'); 
 
             $table->timestamps();
 

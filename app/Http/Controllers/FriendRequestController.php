@@ -1,6 +1,7 @@
 <?php
 
 // app/Http/Controllers/FriendRequestController.php
+// app/Http/Controllers/FriendRequestController.php
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -11,6 +12,9 @@ use App\Events\FriendRequestAccepted;
 use App\Events\FriendRequestRejected;
 use Illuminate\Http\Request;
 use Auth;
+use Illuminate\Support\Facades\DB;
+use Log;
+
 
 class FriendRequestController extends Controller
 {
@@ -22,72 +26,96 @@ class FriendRequestController extends Controller
 
         $sender_id = Auth::id();
         $receiver_id = $request->input('receiver_id');
-
-        // Check if a friend request already exists
+        $sender = User::findOrFail($sender_id); // Ensure sender is defined
+        $receiver = User::findOrFail($receiver_id); // Ensure receiver is defined
         $existingRequest = FriendRequest::where('sender_id', $sender_id)
             ->where('receiver_id', $receiver_id)
             ->first();
 
         if ($existingRequest) {
-            return response()->json(['message' => 'Friend request already sent'], 400);
+            return response()->json(['message' => 'Friend request already sent', 'request_id' => $existingRequest->id], 400);
         }
 
-        // Create a new friend request
         $friendRequest = new FriendRequest();
         $friendRequest->sender_id = $sender_id;
         $friendRequest->receiver_id = $receiver_id;
+        $friendRequest->status = 'pending';  // Status set to pending
         $friendRequest->save();
 
-        $sender = User::findOrFail($sender_id);
-        $receiver = User::findOrFail($receiver_id);
-
-        // Dispatch the event
         event(new FriendRequestSent($friendRequest, $sender, $receiver));
 
-        return response()->json(['message' => 'Friend request sent'], 200);
+        return response()->json([
+            'message' => 'Friend request sent',
+             'request_id' => $friendRequest->id,
+             'receiver_id' => $receiver_id ], 200);
     }
 
+    /**
+     * Accept a friend request and update the status.
+     *
+     * @param int $id The ID of the friend request to accept.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function acceptFriendRequest(Request $request, $id)
+{
+    // Start transaction
+    DB::beginTransaction();
 
-
-    public function acceptFriendRequest($id)
-    {
-        $friendRequest = FriendRequest::find($id);
+    try {
+        // Fetch the friend request
+        $friendRequest = DB::table('friend_requests')
+                           ->where('id', $id)
+                           ->where('status', 'pending')
+                           ->first();
 
         if (!$friendRequest) {
             return response()->json(['message' => 'Friend request not found'], 404);
         }
 
-        $friendRequest->status = 'accepted';
-        $friendRequest->is_accepted = true;
-        $friendRequest->save();
+        // Update the friend request status
+        DB::table('friend_requests')
+          ->where('id', $id)
+          ->update(['status' => 'friend','is_accepted' => true]);
 
-        $sender = User::findOrFail($friendRequest->sender_id);
-        $receiver = User::findOrFail($friendRequest->receiver_id);
+        // Create or update the friendship relation
+        DB::table('friendships')->updateOrInsert(
+            ['user_id' => $friendRequest->sender_id, 'friend_id' => $friendRequest->receiver_id],
+            ['status' => 'friend', 'updated_at' => now()]  // Assuming you handle created_at in your model or database
+        );
 
-        $receiver->friends()->attach($sender->id, ['is_accepted' => true]);
-        $sender->friends()->attach($receiver->id, ['is_accepted' => true]);
+        DB::table('friendships')->updateOrInsert(
+            ['user_id' => $friendRequest->receiver_id, 'friend_id' => $friendRequest->sender_id],
+            ['status' => 'friend', 'updated_at' => now()]
+        );
 
-        // Dispatch the event
-        event(new FriendRequestAccepted($friendRequest, $sender, $receiver));
+        // Commit the transaction
+        DB::commit();
 
         return response()->json(['message' => 'Friend request accepted'], 200);
+    } catch (\Exception $e) {
+        // Rollback transaction on error
+        DB::rollBack();
+        return response()->json(['message' => 'Failed to accept friend request', 'error' => $e->getMessage()], 500);
+    }
+}
+
+public function rejectFriendRequest($id)
+{
+    Log::info("Attempting to reject friend request with ID: {$id}");
+
+    $friendRequest = FriendRequest::find($id);
+    if (!$friendRequest) {
+        Log::error("Friend request not found with ID: {$id}");
+        return response()->json(['message' => 'Friend request not found'], 404);
     }
 
-    public function rejectFriendRequest($id)
-    {
-        $friendRequest = FriendRequest::find($id);
+    // Optionally, check the relationship status if needed
+    // Example: if($friendRequest->status != 'pending') { ... }
 
-        if (!$friendRequest) {
-            return response()->json(['message' => 'Friend request not found'], 404);
-        }
+    $friendRequest->delete();
 
-        $sender = User::find($friendRequest->sender_id);
-        $receiver = User::find($friendRequest->receiver_id);
+    Log::info("Friend request with ID: {$id} has been rejected and deleted.");
 
-        event(new FriendRequestRejected($friendRequest, $sender, $receiver));
-
-        $friendRequest->delete();
-
-        return response()->json(['message' => 'Friend request rejected'], 200);
-    }
+    return response()->json(['message' => 'Friend request rejected'], 200);
+}
 }

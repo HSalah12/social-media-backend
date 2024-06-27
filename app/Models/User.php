@@ -117,15 +117,16 @@ class User extends Authenticatable implements HasMedia
     }
     
     public function friends()
-{
-    return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
-                ->wherePivot('is_accepted', true); // Only consider accepted friendships
-}
+    {
+        return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'friend');
+    }
 
     public function isFriendWith(User $otherUser)
 {
-    return $this->friends()->where('friend_id', $otherUser->id)->where('is_accepted', true)->exists() ||
-           $otherUser->friends()->where('friend_id', $this->id)->where('is_accepted', true)->exists();
+    return $this->friends()->where('friend_id', $otherUser->id)->where('status', 'friend')->exists() ||
+           $otherUser->friends()->where('friend_id', $this->id)->where('status', 'friend')->exists();
 }
     // Method to get mutual friends
     public function mutualFriends($otherUser)
@@ -158,7 +159,12 @@ class User extends Authenticatable implements HasMedia
 
         return $suggestions;
     }
-
+    public function friendRequests()
+    {
+        return $this->belongsToMany(User::class, 'friendships', 'friend_id', 'user_id')
+                    ->withPivot('status')
+                    ->wherePivot('status', 'pending');
+    }
 
     public function sentFriendRequests()
 {

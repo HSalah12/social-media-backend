@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use Spatie\MediaLibrary\HasMedia\HasMedia;
 use Spatie\MediaLibrary\HasMediaTrait;
 use Illuminate\Support\Facades\Auth;
+use Storage;
 
 class UserProfileController extends Controller 
 {
@@ -145,51 +146,83 @@ class UserProfileController extends Controller
 }
 
 
-    public function show($id)
-    {
-        $user = User::findOrFail($id);
-        
-        return response()->json([
-            'name' => $user->name,
-            'username' => $user->username,
-            'email' => $user->email,
-            'email_verified_at' => $user->email_verified_at,
-            'date_of_birth' => $user->date_of_birth,
-            'gender' => $user->gender,
-            'city' => $user->city,
-            'state' => $user->state,
-            'country' => $user->country,
-            'bio' => $user->bio,
-            'phone_number' => $user->phone_number,
-            'website_url' => $user->website_url,
-            'social_media_links' => $user->social_media_links,
-            'visibility_settings' => $user->visibility_settings,
-            'privacy_settings' => $user->privacy_settings,
-            'hobbies' => $user->hobbies,
-            'favorite_books' => $user->favorite_books,
-            'favorite_movies' => $user->favorite_movies,
-            'favorite_music' => $user->favorite_music,
-            'languages_spoken' => $user->languages_spoken,
-            'favorite_quotes' => $user->favorite_quotes,
-            'education_history' => $user->education_history,
-            'employment_history' => $user->employment_history,
-            'relationship_status' => $user->relationship_status,
-            'activity_engagement' => $user->activity_engagement,
-            'notification_preferences' => $user->notification_preferences,
-            'security_settings' => $user->security_settings,
-            'achievements' => $user->achievements,
-            'badges' => $user->badges,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-        ]);
-      // Handle profile picture upload
+public function show(Request $request, $id)
+{
+    $user = User::findOrFail($id);
+
     if ($request->hasFile('profile_picture')) {
-        $user->addMediaFromRequest('profile_picture')
-            ->toMediaCollection('profile_pictures');
+        // Delete old profile picture if exists
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
+
+        // Store the new profile picture and update the user model
+        $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+        $user->profile_picture = $profilePicturePath;
     }
-        $user->save();
-        return response()->json($user);
+
+    if ($request->hasFile('cover_photo')) {
+        // Delete old cover photo if exists
+        if ($user->cover_photo) {
+            Storage::disk('public')->delete($user->cover_photo);
+        }
+
+        // Store the new cover photo and update the user model
+        $coverPhotoPath = $request->file('cover_photo')->store('cover_photos', 'public');
+        $user->cover_photo = $coverPhotoPath;
     }
+
+    // Save the updated user info
+    $user->save();
+
+    // Generate full URLs for the images
+    $profilePictureUrl = $user->profile_picture ? Storage::disk('public')->url($user->profile_picture) : null;
+    $coverPhotoUrl = $user->cover_photo ? Storage::disk('public')->url($user->cover_photo) : null;
+
+    // Prepare and return the response
+    return response()->json([
+        'message' => 'User data ',
+        'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'profile_picture_url' => $profilePictureUrl,
+                    'cover_photo_url' => $coverPhotoUrl,
+                    'date_of_birth' => $user->date_of_birth,
+                    'gender' => $user->gender,
+                    'city' => $user->city,
+                    'state' => $user->state,
+                    'country' => $user->country,
+                    'bio' => $user->bio,
+                    'phone_number' => $user->phone_number,
+                    'website_url' => $user->website_url,
+                    'social_media_links' => $user->social_media_links,
+                    'visibility_settings' => $user->visibility_settings,
+                    'privacy_settings' => $user->privacy_settings,
+                    'hobbies' => $user->hobbies,
+                    'favorite_books' => $user->favorite_books,
+                    'favorite_movies' => $user->favorite_movies,
+                    'favorite_music' => $user->favorite_music,
+                    'languages_spoken' => $user->languages_spoken,
+                    'favorite_quotes' => $user->favorite_quotes,
+                    'education_history' => $user->education_history,
+                    'employment_history' => $user->employment_history,
+                    'relationship_status' => $user->relationship_status,
+                    'activity_engagement' => $user->activity_engagement,
+                    'notification_preferences' => $user->notification_preferences,
+                    'security_settings' => $user->security_settings,
+                    'achievements' => $user->achievements,
+                    'badges' => $user->badges,
+                    'created_at' => $user->created_at,
+                     'updated_at' => $user->updated_at,
+                ]
+            ]);
+       
+      
+    }
+  
+    
 
     public function destroy($id)
     {

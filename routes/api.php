@@ -47,7 +47,7 @@ Route::post('/profile', [UserProfileController::class, 'store']);
 // update profile
 Route::post('/users', 'App\Http\Controllers\UserController@update')->middleware('auth:api');
 
-// Return profile Data
+// Return users Data with id
 Route::get('/profile/{id}', 'App\Http\Controllers\UserProfileController@show')->middleware('auth:api');;
 
 // Delete Account

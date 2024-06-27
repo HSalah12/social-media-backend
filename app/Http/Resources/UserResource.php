@@ -3,17 +3,55 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
     public function toArray($request)
     {
+        if ($request->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($this->profile_picture) {
+                Storage::disk('public')->delete($this->profile_picture);
+            }
+
+            // Store the new profile picture and update the user model
+            $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $this->profile_picture = $profilePicturePath;
+        }
+
+        if ($request->hasFile('cover_photo')) {
+            // Delete old cover photo if exists
+            if ($this->cover_photo) {
+                Storage::disk('public')->delete($this->cover_photo);
+            }
+
+            // Store the new cover photo and update the user model
+            $coverPhotoPath = $request->file('cover_photo')->store('cover_photos', 'public');
+            $this->cover_photo = $coverPhotoPath;
+        }
+
+        // Save the updated user info
+        $this->save();
+
+        // Generate full URLs for the images
+        $profilePictureUrl = $this->profile_picture ? Storage::disk('public')->url($this->profile_picture) : null;
+        $coverPhotoUrl = $this->cover_photo ? Storage::disk('public')->url($this->cover_photo) : null;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'username' => $this->username,
             'email' => $this->email,
             'email_verified_at' => $this->email_verified_at,
+            'profile_picture_url' => $profilePictureUrl,
+            'cover_photo_url' => $coverPhotoUrl,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
             'city' => $this->city,
