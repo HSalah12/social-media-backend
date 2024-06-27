@@ -57,10 +57,12 @@ Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destr
 Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
 
 //Accept and Rejectfollow and unfollow
-Route::post('follow-requests/send', 'App\Http\Controllers\FollowRequestController@send')->middleware('auth:api');
-Route::put('follow-requests/{id}/accept', 'App\Http\Controllers\FollowRequestController@accept')->middleware('auth:api');
-Route::put('follow-requests/{id}/reject', 'App\Http\Controllers\FollowRequestController@reject')->middleware('auth:api');
-Route::delete('follow-requests/{id}', 'App\Http\Controllers\FollowRequestController@unfollow')->middleware('auth:api');
+
+    Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
+    Route::post('/follow-requests/accept/{id}', [FollowRequestController::class, 'accept'])->middleware('auth:api');
+    Route::post('/follow-requests/reject/{id}', [FollowRequestController::class, 'reject'])->middleware('auth:api');
+    Route::post('/follow-requests/unfollow/{id}', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
+
 
 // GET activities
 Route::get('profile/{id}/activities', 'App\Http\Controllers\UserProfileController@activities')->middleware('auth:api');

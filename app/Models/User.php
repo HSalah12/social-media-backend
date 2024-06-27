@@ -92,11 +92,26 @@ class User extends Authenticatable implements HasMedia
         return $this->belongsToMany(User::class, 'followers', 'user_id', 'followed_id');
     }
 
-    public function isFollowing(User $user)
-    {
-        // Ensure you reference 'is_accepted' if that's what you named the column
-        return $this->followings()->where('followed_id', $user->id)->where('is_accepted', true)->exists();
+    public function isFollowing($userId)
+{
+    return Follower::where('follower_id', $this->id)
+        ->where('followed_id', $userId)
+        ->where('is_accepted', true)
+        ->exists();
+}
+public function getFollowStatus($userId)
+{
+    $followRequest = FollowRequest::where('follower_id', $this->id)
+        ->where('followed_id', $userId)
+        ->first();
+
+    if ($followRequest) {
+        return $followRequest->status;
     }
+
+    return 'not_following';
+}
+
     public function following()
     {
         return $this->belongsToMany(User::class, 'follow_requests', 'follows_user_id', 'user_id')
@@ -119,10 +134,19 @@ class User extends Authenticatable implements HasMedia
     public function friends()
     {
         return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
-                    ->withPivot('status')
-                    ->wherePivot('status', 'friend');
+                    ->withPivot('status');
     }
 
+    public function getFriendshipStatus($friendId)
+    {
+        $friendship = $this->friends()->where('friend_id', $friendId)->first();
+
+        if ($friendship) {
+            return $friendship->pivot->status;
+        }
+
+        return 'not friend';
+    }
     public function isFriendWith(User $otherUser)
 {
     return $this->friends()->where('friend_id', $otherUser->id)->where('status', 'friend')->exists() ||

@@ -10,11 +10,13 @@ class CreateFollowRequestsTable extends Migration
     {
         Schema::create('follow_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('follower_id')->constrained('users')->onDelete('cascade');
-            $table->unsignedBigInteger('followed_id')->nullable();
-            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+            $table->unsignedBigInteger('follower_id');
+            $table->unsignedBigInteger('followed_id');
+            $table->string('status')->default('pending');
             $table->timestamps();
+
+            $table->foreign('follower_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('followed_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
@@ -23,4 +25,3 @@ class CreateFollowRequestsTable extends Migration
         Schema::dropIfExists('follow_requests');
     }
 }
-

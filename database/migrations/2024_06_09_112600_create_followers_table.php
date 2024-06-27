@@ -6,29 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('followers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('follower_id');
             $table->unsignedBigInteger('followed_id');
-            $table->unsignedBigInteger('follows_user_id')->nullable(); // Making it nullable
+            $table->boolean('is_accepted')->default(false);
             $table->timestamps();
-            $table->boolean('is_accepted')->default(false); // using 'is_accepted' instead of 'accepted'
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('follower_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('followed_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unique(['user_id', 'followed_id']); // Ensure no duplicate follows
-
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('followers');

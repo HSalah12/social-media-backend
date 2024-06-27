@@ -9,7 +9,7 @@ class ActivityFeed extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'activity_type', 'description', 'related_id'];
+    protected $fillable = [ 'user_id', 'activity_type', 'related_id', 'description'];
 
 
     public function user()

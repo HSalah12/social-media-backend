@@ -5,55 +5,78 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\FollowRequest;
 use App\Models\User;
+use App\Models\ActivityFeed;
+use App\Models\Follower;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use App\Events\FollowRequestSent;
 use App\Events\FollowRequestAccepted;
 use App\Events\FollowRequestRejected;
 use App\Events\UserUnfollowed;
-use App\Models\Follower;
+use Log;
+
 class FollowRequestController extends Controller
 {
     public function send(Request $request)
     {
         $request->validate([
-            'follower_id' => 'required',
-            'followed_id' => 'required',
+            'followed_id' => 'required|exists:users,id',
         ]);
 
-        $followRequest = new FollowRequest([
-            'user_id' => $request->follower_id,
-            'follower_id' => $request->follower_id,
-            'followed_id' => $request->followed_id,
-            'status' => 'pending',
-        ]);
+        $follower_id = Auth::id();
+        if (!$follower_id) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-        $user = Auth::user();
-        $token = $user->createToken('myToken')->accessToken;
-        $followRequest->save(); 
+        $followed_id = $request->input('followed_id');
+
+        Log::info('Follow request send initiated', ['follower_id' => $follower_id, 'followed_id' => $followed_id]);
+
+        $existingRequest = FollowRequest::where('follower_id', $follower_id)
+            ->where('followed_id', $followed_id)
+            ->first();
+
+        if ($existingRequest) {
+            return response()->json(['message' => 'Follow request already sent', 'request_id' => $existingRequest->id], 400);
+        }
+
+        $followRequest = new FollowRequest();
+        $followRequest->follower_id = $follower_id;
+        $followRequest->followed_id = $followed_id;
+        $followRequest->status = 'pending';
+        $followRequest->save();
+
+        Log::info('Follow request created', ['followRequest' => $followRequest]);
+
+        ActivityFeed::create([
+            'user_id' => $follower_id,
+            'activity_type' => 'follow_request_sent',
+            'related_id' => $followRequest->id,
+            'description' => 'Follow request sent to user with ID ' . $followed_id,
+        ]);
 
         event(new FollowRequestSent($followRequest));
 
         return response()->json([
             'message' => 'Follow request sent successfully',
-            'follow_request_id' => $followRequest->id,
-            'token' => $token,
-            'followed_id' => $request->followed_id
+            'follow_request_id' => $followRequest->id
         ]);
     }
 
     public function accept($id)
     {
         $followRequest = FollowRequest::findOrFail($id);
-        $followRequest->update(['status' => 'accepted']);
 
         $user = Auth::user();
-        $token = $user->createToken('myToken')->accessToken;
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-        // Update or create the follower relationship in the followers table
-        $follower = Follower::updateOrCreate(
+        $followRequest->update(['status' => 'accepted']);
+
+        Follower::updateOrCreate(
             [
-                'user_id' => $followRequest->user_id,
+                'follower_id' => $followRequest->follower_id,
                 'followed_id' => $followRequest->followed_id
             ],
             [
@@ -61,27 +84,67 @@ class FollowRequestController extends Controller
             ]
         );
 
+        ActivityFeed::create([
+            'user_id' => $user->id,
+            'activity_type' => 'follow_request_accepted',
+            'related_id' => $followRequest->id,
+            'description' => 'Follow request accepted by user with ID ' . $followRequest->followed_id,
+        ]);
+
         event(new FollowRequestAccepted($followRequest));
 
-        return response()->json(['message' => 'Follow request accepted', 'token' => $token]);
+        return response()->json(['message' => 'Follow request accepted']);
     }
+
     public function reject($id)
     {
         $followRequest = FollowRequest::findOrFail($id);
-        $followRequest->update(['status' => 'rejected']);
 
         $user = Auth::user();
-        $token = $user->createToken('myToken')->accessToken;
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $followRequest->update(['status' => 'rejected']);
+
+        ActivityFeed::create([
+            'user_id' => $user->id,
+            'activity_type' => 'follow_request_rejected',
+            'related_id' => $followRequest->id,
+            'description' => 'Follow request rejected by user with ID ' . $followRequest->followed_id,
+        ]);
 
         event(new FollowRequestRejected($followRequest));
 
-        return response()->json(['message' => 'Follow request rejected', 'token' => $token]);
+        return response()->json(['message' => 'Follow request rejected']);
     }
 
     public function unfollow($id)
     {
-        $followRequest = FollowRequest::findOrFail($id);
+        $followRequest = FollowRequest::find($id);
+
+        if (!$followRequest) {
+            return response()->json(['message' => 'Follow request not found'], 404);
+        }
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Delete the corresponding follower entry
+        Follower::where('follower_id', $followRequest->follower_id)
+            ->where('followed_id', $followRequest->followed_id)
+            ->delete();
+
         $followRequest->delete();
+
+        ActivityFeed::create([
+            'user_id' => $user->id,
+            'activity_type' => 'user_unfollowed',
+            'related_id' => $followRequest->id,
+            'description' => 'User with ID ' . $followRequest->follower_id . ' unfollowed user with ID ' . $followRequest->followed_id,
+        ]);
 
         event(new UserUnfollowed($followRequest));
 
@@ -91,16 +154,27 @@ class FollowRequestController extends Controller
     public function checkFollowStatus(User $user)
     {
         $follower = Auth::user();
-
-        // Check if there's a direct following relationship
-        $isFollowing = $follower->isFollowing($user);
-
-        // If not following directly, check if there's a pending follow request that has been accepted
-        if (!$isFollowing) {
-            $isPending = $follower->followRequests()->where('followed_id', $user->id)->where('status', 'accepted')->exists();
-            $isFollowing = $isPending;
+        if (!$follower) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        return response()->json(['isFollowing' => $isFollowing]);
+        $isFollowing = Follower::where('follower_id', $follower->id)
+            ->where('followed_id', $user->id)
+            ->where('is_accepted', true)
+            ->exists();
+
+        $isPending = FollowRequest::where('follower_id', $follower->id)
+            ->where('followed_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        $status = 'not_following';
+        if ($isFollowing) {
+            $status = 'following';
+        } elseif ($isPending) {
+            $status = 'pending';
+        }
+
+        return response()->json(['status' => $status]);
     }
 }

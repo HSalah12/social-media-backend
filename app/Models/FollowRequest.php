@@ -1,32 +1,41 @@
 <?php
 
-// app/Models/FollowRequest.php
-
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FollowRequest extends Model
 {
-    protected $fillable = [
+    use HasFactory;
 
-        'user_id',
+    protected $fillable = ['follower_id', 'followed_id', 'status'];
 
-        'follower_id',
-
-        'followed_id',
-
-        'status'
-
-        ];
-
-    public function user()
+    public function followers()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsToMany(User::class, 'followers', 'followed_id', 'follower_id')
+                    ->withPivot('status', 'is_accepted');
     }
 
-    public function follower()
+    public function following()
     {
-        return $this->belongsTo(User::class, 'follower_id');
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'followed_id')
+                    ->withPivot('status', 'is_accepted');
+    }
+
+    public function isFollowing(User $user)
+    {
+        return $this->following()->where('followed_id', $user->id)->where('is_accepted', true)->exists();
+    }
+
+    public function getFollowStatus($userId)
+    {
+        $follow = $this->following()->where('followed_id', $userId)->first();
+
+        if ($follow) {
+            return $follow->pivot->status;
+        }
+
+        return 'not followed';
     }
 }

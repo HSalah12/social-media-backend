@@ -1,46 +1,30 @@
 <?php
-
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\FollowRequest;
 
 class UserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)
     {
-        if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if exists
-            if ($this->profile_picture) {
-                Storage::disk('public')->delete($this->profile_picture);
-            }
+        $authenticatedUser = Auth::user();
+        $friendStatus = 'not friend';
+        $followStatus = 'not followed';
 
-            // Store the new profile picture and update the user model
-            $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $this->profile_picture = $profilePicturePath;
+        if ($authenticatedUser) {
+            $friendStatus = $authenticatedUser->getFriendshipStatus($this->id);
+            // $followStatus = $authenticatedUser->getFollowStatus($this->id);
         }
 
-        if ($request->hasFile('cover_photo')) {
-            // Delete old cover photo if exists
-            if ($this->cover_photo) {
-                Storage::disk('public')->delete($this->cover_photo);
-            }
-
-            // Store the new cover photo and update the user model
-            $coverPhotoPath = $request->file('cover_photo')->store('cover_photos', 'public');
-            $this->cover_photo = $coverPhotoPath;
-        }
-
-        // Save the updated user info
-        $this->save();
-
-        // Generate full URLs for the images
         $profilePictureUrl = $this->profile_picture ? Storage::disk('public')->url($this->profile_picture) : null;
         $coverPhotoUrl = $this->cover_photo ? Storage::disk('public')->url($this->cover_photo) : null;
 
@@ -79,6 +63,9 @@ class UserResource extends JsonResource
             'badges' => $this->badges,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'active' => $this->active,
+            'is_friend' => $friendStatus,
+            'follow_status' => $followStatus, // Add follow status
         ];
     }
 }
