@@ -191,9 +191,6 @@ public function show(Request $request, $id)
     
 }
 
-  
-    
-
     public function destroy($id)
     {
         $user = User::findOrFail($id);
