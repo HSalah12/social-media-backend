@@ -30,10 +30,15 @@ class NewsFeedController extends Controller
 
         $currentTime = now()->timestamp;
 
-        $newsFeedItems = NewsFeedItem::orderBy('created_at', 'desc')->paginate(5);
+        // Filter and paginate approved news feed items with user data
+        $newsFeedItems = NewsFeedItem::where('status', 'approved')
+            ->with('user:id,name,profile_picture')
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
 
-        $sortedItems = $newsFeedItems->sortByDesc(function ($item) use ($viewWeight, $likeWeight, $commentWeight, $shareWeight, $recencyWeight, $currentTime) {
-            $recencyFactor = $item->recency_factor ? $item->recency_factor->timestamp() : $currentTime;
+        // Sort the items based on the custom scoring
+        $sortedItems = $newsFeedItems->getCollection()->sortByDesc(function ($item) use ($viewWeight, $likeWeight, $commentWeight, $shareWeight, $recencyWeight, $currentTime) {
+            $recencyFactor = $item->created_at->timestamp ?? $currentTime;
             return $item->views * $viewWeight
                    + $item->likes * $likeWeight
                    + $item->comments * $commentWeight
@@ -41,7 +46,78 @@ class NewsFeedController extends Controller
                    + ($currentTime - $recencyFactor) * $recencyWeight;
         });
 
-        return response()->json($sortedItems);
+        // Update the paginated items with the sorted items
+        $newsFeedItems->setCollection($sortedItems);
+
+        // Transform the data to include only necessary user fields
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'content' => $item->content,
+                'views' => $item->views,
+                'likes' => $item->likes,
+                'comments' => $item->comments,
+                'shares' => $item->shares,
+                'created_at' => $item->created_at,
+                'user' => $item->user ? [
+                    'id' => $item->user->id,
+                    'name' => $item->user->name,
+                    'profile_picture' => $item->user->profile_picture,
+                ] : null,
+            ];
+        });
+
+        return response()->json($transformedItems);
+    }
+
+    public function indexpending(Request $request)
+    {
+        $viewWeight = 1;
+        $likeWeight = 2;
+        $commentWeight = 3;
+        $shareWeight = 4;
+        $recencyWeight = 0.5; // Adjust weights as needed
+
+        $currentTime = now()->timestamp;
+
+        // Filter and paginate pending news feed items with user data
+        $newsFeedItems = NewsFeedItem::where('status', 'pending')
+            ->with('user:id,name,profile_picture')
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
+
+        // Sort the items based on the custom scoring
+        $sortedItems = $newsFeedItems->getCollection()->sortByDesc(function ($item) use ($viewWeight, $likeWeight, $commentWeight, $shareWeight, $recencyWeight, $currentTime) {
+            $recencyFactor = $item->created_at->timestamp ?? $currentTime;
+            return $item->views * $viewWeight
+                   + $item->likes * $likeWeight
+                   + $item->comments * $commentWeight
+                   + $item->shares * $shareWeight
+                   + ($currentTime - $recencyFactor) * $recencyWeight;
+        });
+
+        // Update the paginated items with the sorted items
+        $newsFeedItems->setCollection($sortedItems);
+
+        // Transform the data to include only necessary user fields
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'content' => $item->content,
+                'views' => $item->views,
+                'likes' => $item->likes,
+                'comments' => $item->comments,
+                'shares' => $item->shares,
+                'created_at' => $item->created_at,
+                'user' => [
+                    'id' => $item->user->id,
+                    'name' => $item->user->name,
+                    'profile_picture' => $item->user->profile_picture,
+                ],
+            ];
+        });
+
+        return response()->json($transformedItems);
     }
     public function store(Request $request)
     {

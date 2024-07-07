@@ -28,31 +28,41 @@ class ConversationController extends Controller
     }
 
     public function sendMessage(Request $request)
-{
-    $validated = $request->validate([
-        'conversation_id' => 'required|exists:conversations,id',
-        'sender_id' => 'required|exists:users,id',
-        'receiver_id' => 'required|exists:users,id',
-        'message' => 'required|string',
-    ]);
+    {
+        $validated = $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'message' => 'required|string',
+        ]);
 
-    $encryptedMessage = Crypt::encryptString($validated['message']);
+        $senderId = Auth::id();
 
-    $message = Message::create([
-        'conversation_id' => $validated['conversation_id'],
-        'sender_id' => $validated['sender_id'],
-        'receiver_id' => $validated['receiver_id'],
-        'message' => $encryptedMessage,
-        'is_delivered' => false, // Default value is false
-    ]);
+        if (!$senderId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-    // Code to send notification to the receiver (e.g., via websockets, push notification, etc.)
+        // Retrieve the conversation to determine the receiver_id
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
 
-    return response()->json([
-        'data' => $message, // Encrypted message
-        'decrypted_message' => $validated['message'], // Original, unencrypted message
-    ], 201);
-}
+        // Determine the receiver_id
+        $receiverId = ($conversation->user_one_id == $senderId) ? $conversation->user_two_id : $conversation->user_one_id;
+
+        $encryptedMessage = Crypt::encryptString($validated['message']);
+
+        $message = Message::create([
+            'conversation_id' => $validated['conversation_id'],
+            'sender_id' => $senderId,
+            'receiver_id' => $receiverId,
+            'message' => $encryptedMessage,
+            'is_delivered' => false, 
+        ]);
+
+        // Code to send notification to the receiver (e.g., via websockets, push notification, etc.)
+
+        return response()->json([
+            'data' => $message, // Encrypted message
+            'decrypted_message' => $validated['message'], // Original, unencrypted message
+        ], 201);
+    }
     
 
     public function getMessages($conversationId)
@@ -105,5 +115,30 @@ public function search(Request $request)
 
     return response()->json($messages);
 }
+public function getAllChats()
+{
+    $userId = Auth::id();
 
+    if (!$userId) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $conversations = Conversation::where('user_one_id', $userId)
+        ->orWhere('user_two_id', $userId)
+        ->with(['userOne:id,name,profile_picture', 'userTwo:id,name,profile_picture', 'messages' => function ($query) {
+            $query->orderBy('created_at', 'desc')->limit(1);
+        }])
+        ->get();
+
+    $conversationsWithLatestMessage = $conversations->map(function ($conversation) {
+        return [
+            'conversation_id' => $conversation->id,
+            'user_one' => $conversation->userOne,
+            'user_two' => $conversation->userTwo,
+            'latest_message' => $conversation->messages->first(),
+        ];
+    });
+
+    return response()->json($conversationsWithLatestMessage);
+}
 }

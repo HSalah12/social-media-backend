@@ -56,6 +56,9 @@ class User extends Authenticatable implements HasMedia
         $this->privacy_settings = $settings;
         $this->save();
     }
+
+      // Define the relationship to the User model for the follower
+     
     
     public function getPrivacySettings()
     {

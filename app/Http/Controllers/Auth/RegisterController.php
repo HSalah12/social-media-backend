@@ -29,6 +29,8 @@ class RegisterController extends Controller
             'username' => 'required|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
+            'gender' => 'required|string|max:10',
+            'date_of_birth' => 'required|date',
         ]);
 
         // Generate OTP
@@ -41,7 +43,10 @@ class RegisterController extends Controller
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
+            'gender' => $request->gender,
+            'date_of_birth' => $request->date_of_birth,
             'password' => Hash::make($request->password),
+            
             
             
             // Add other fields as needed

@@ -58,11 +58,18 @@ Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->m
 
 //Accept and Rejectfollow and unfollow
 
-    Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
-    Route::post('/follow-requests/accept/{id}', [FollowRequestController::class, 'accept'])->middleware('auth:api');
-    Route::post('/follow-requests/reject/{id}', [FollowRequestController::class, 'reject'])->middleware('auth:api');
-    Route::post('/follow-requests/unfollow/{id}', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
+Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
+Route::post('/follow-requests/accept/{id}', [FollowRequestController::class, 'accept'])->middleware('auth:api');
+Route::post('/follow-requests/reject/{id}', [FollowRequestController::class, 'reject'])->middleware('auth:api');
+Route::post('/follow-requests/unfollow/{id}', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
 
+// getFollowers
+
+Route::post('/followers/{id}', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
+
+// getFollowed
+
+Route::post('/followed/{id}', [FollowRequestController::class, 'getFollowed'])->middleware('auth:api');
 
 // GET activities
 Route::get('profile/{id}/activities', 'App\Http\Controllers\UserProfileController@activities')->middleware('auth:api');
@@ -99,6 +106,8 @@ Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destro
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
+Route::get('/news-feed/pending', 'App\Http\Controllers\NewsFeedController@indexpending')->middleware('auth:api');
+
 
 //news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
@@ -129,6 +138,9 @@ Route::delete('comments/{id}', 'App\Http\Controllers\NewsFeedController@deleteCo
 Route::post('conversations', 'App\Http\Controllers\ConversationController@createConversation')->middleware('auth:api');
 Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage')->middleware('auth:api');
 Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages')->middleware('auth:api');
+
+//get all chats 
+Route::get('/conversations', 'App\Http\Controllers\ConversationController@getAllChats')->middleware('auth:api');
 
 //group-chats
 Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->middleware('auth:api');

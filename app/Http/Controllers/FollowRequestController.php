@@ -177,4 +177,37 @@ class FollowRequestController extends Controller
 
         return response()->json(['status' => $status]);
     }
+
+    public function getFollowers($id)
+    {
+        $followers = Follower::where('followed_id', $id)
+            ->where('is_accepted', true)
+            ->with('follower:id,name,profile_picture')
+            ->get()
+            ->map(function ($follower) {
+                return [
+                    'id' => $follower->follower->id,
+                    'name' => $follower->follower->name,
+                    'profile_picture' => $follower->follower->profile_picture,
+                ];
+            });
+
+        return response()->json($followers);
+    }
+    public function getFollowed($id)
+    {
+        $followed = Follower::where('follower_id', $id)
+            ->where('is_accepted', true)
+            ->with('followed:id,name,profile_picture')
+            ->get()
+            ->map(function ($follow) {
+                return [
+                    'id' => $follow->followed->id,
+                    'name' => $follow->followed->name,
+                    'profile_picture' => $follow->followed->profile_picture,
+                ];
+            });
+
+        return response()->json($followed);
+    }
 }

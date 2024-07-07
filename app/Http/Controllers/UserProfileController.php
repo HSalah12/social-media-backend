@@ -246,6 +246,7 @@ public function show(Request $request, $id)
     public function showdata(Request $request)
     {    
         $user = Auth::user();
+        
         return new UserResource($user);
     }
 
