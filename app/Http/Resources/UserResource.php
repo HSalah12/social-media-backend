@@ -64,8 +64,11 @@ class UserResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'active' => $this->active,
-            'is_friend' => $friendStatus,
+            'friend_status' => $friendStatus,
             'follow_status' => $followStatus, // Add follow status
+            'number_of_friends' => $this->number_of_friends, // Add number of friends
+            'number_of_followers' => $this->number_of_followers, // Add number of friends
+
         ];
     }
 }

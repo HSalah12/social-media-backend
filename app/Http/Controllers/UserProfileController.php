@@ -181,11 +181,11 @@ public function show(Request $request, $id)
     $coverPhotoUrl = $user->cover_photo ? Storage::disk('public')->url($user->cover_photo) : null;
 
     // Determine friendship status
-    $isFriend = $currentUser->getFriendshipStatus($user->id);
 
     // Determine follow status
     $followStatus = $currentUser->getFollowStatus($user->id);
 
+    $friendRequest = $currentUser->getFriendshipStatus($user->id);
     // Prepare and return the response
     return response()->json([
         'message' => 'User data',
@@ -223,7 +223,7 @@ public function show(Request $request, $id)
             'badges' => $user->badges,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
-            'is_friend' => $isFriend, // Add friendship status
+            'friend_status' =>  $friendRequest, // Add friendship status
             'follow_status' => $followStatus, // Add follow status
         ]
     ]);

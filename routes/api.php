@@ -59,17 +59,19 @@ Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->m
 //Accept and Rejectfollow and unfollow
 
 Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
-Route::post('/follow-requests/accept/{id}', [FollowRequestController::class, 'accept'])->middleware('auth:api');
-Route::post('/follow-requests/reject/{id}', [FollowRequestController::class, 'reject'])->middleware('auth:api');
-Route::post('/follow-requests/unfollow/{id}', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
+Route::post('/follow-requests/accept', [FollowRequestController::class, 'accept'])->middleware('auth:api');
+Route::post('/follow-requests/reject', [FollowRequestController::class, 'reject'])->middleware('auth:api');
+Route::post('/follow-requests/unfollow', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
 
 // getFollowers
 
-Route::post('/followers/{id}', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
+Route::post('/followers', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
+Route::post('/followers/{id}', [FollowRequestController::class, 'gettFollowers'])->middleware('auth:api');
 
 // getFollowed
 
-Route::post('/followed/{id}', [FollowRequestController::class, 'getFollowed'])->middleware('auth:api');
+Route::post('/followed', [FollowRequestController::class, 'getFollowed'])->middleware('auth:api');
+Route::post('/followed/{id}', [FollowRequestController::class, 'gettFollowed'])->middleware('auth:api');
 
 // GET activities
 Route::get('profile/{id}/activities', 'App\Http\Controllers\UserProfileController@activities')->middleware('auth:api');
@@ -89,9 +91,14 @@ Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserCont
 Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@suggest')->middleware('auth:api');
 
 //friend requests
-Route::post('friend-requests/send/{receiverId}', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
-Route::put('friend-requests/accept/{requestId}','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
-Route::delete('friend-requests/reject/{requestId}', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');
+Route::post('friend-requests/send', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
+Route::post('friend-requests/accept','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
+Route::post('friend-requests/reject', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');
+
+//get friends
+Route::get('/friends/{id}', [FriendRequestController::class, 'getFriends'])->middleware('auth:api');
+
+Route::get('/friends', [FriendRequestController::class, 'getAuthUserFriends'])->middleware('auth:api');
 
 //activity-feeds
 Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
@@ -103,6 +110,8 @@ Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsCon
 Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
 Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
+
+Route::get('/news-feed/category/{category}', [NewsFeedController::class, 'getByCategory'])->middleware('auth:api');
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');

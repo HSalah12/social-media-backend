@@ -63,94 +63,141 @@ class FollowRequestController extends Controller
         ]);
     }
 
-    public function accept($id)
+    public function accept(Request $request)
     {
-        $followRequest = FollowRequest::findOrFail($id);
+        $request->validate([
+            'follower_id' => 'required|exists:users,id'
+        ]);
 
-        $user = Auth::user();
-        if (!$user) {
+        $followerId = $request->input('follower_id');
+        $followedId = Auth::id();
+
+        if (!$followedId) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $followRequest->update(['status' => 'accepted']);
-
-        Follower::updateOrCreate(
-            [
-                'follower_id' => $followRequest->follower_id,
-                'followed_id' => $followRequest->followed_id
-            ],
-            [
-                'is_accepted' => true
-            ]
-        );
-
-        ActivityFeed::create([
-            'user_id' => $user->id,
-            'activity_type' => 'follow_request_accepted',
-            'related_id' => $followRequest->id,
-            'description' => 'Follow request accepted by user with ID ' . $followRequest->followed_id,
-        ]);
-
-        event(new FollowRequestAccepted($followRequest));
-
-        return response()->json(['message' => 'Follow request accepted']);
-    }
-
-    public function reject($id)
-    {
-        $followRequest = FollowRequest::findOrFail($id);
-
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        $followRequest->update(['status' => 'rejected']);
-
-        ActivityFeed::create([
-            'user_id' => $user->id,
-            'activity_type' => 'follow_request_rejected',
-            'related_id' => $followRequest->id,
-            'description' => 'Follow request rejected by user with ID ' . $followRequest->followed_id,
-        ]);
-
-        event(new FollowRequestRejected($followRequest));
-
-        return response()->json(['message' => 'Follow request rejected']);
-    }
-
-    public function unfollow($id)
-    {
-        $followRequest = FollowRequest::find($id);
+        $followRequest = FollowRequest::where('follower_id', $followerId)
+            ->where('followed_id', $followedId)
+            ->where('status', 'pending')
+            ->first();
 
         if (!$followRequest) {
             return response()->json(['message' => 'Follow request not found'], 404);
         }
 
-        $user = Auth::user();
-        if (!$user) {
+        // Update the follow request status to accepted
+        $followRequest->update(['status' => 'accepted']);
+
+        // Update the follower relation
+        Follower::updateOrCreate(
+            [
+                'follower_id' => $followerId,
+                'followed_id' => $followedId
+            ],
+            [
+                'status' => 'accepted',
+                'is_accepted' => true,
+                'updated_at' => now()
+            ]
+        );
+
+        // Create an activity feed entry
+        ActivityFeed::create([
+            'user_id' => $followedId,
+            'activity_type' => 'follow_request_accepted',
+            'related_id' => $followRequest->id,
+            'description' => 'Follow request accepted by user with ID ' . $followedId,
+        ]);
+
+        // Trigger an event
+        event(new FollowRequestAccepted($followRequest));
+
+        return response()->json(['message' => 'Follow request accepted']);
+    }
+
+    public function reject(Request $request)
+    {
+        $request->validate([
+            'follower_id' => 'required|exists:users,id'
+        ]);
+
+        $followerId = $request->input('follower_id');
+        $followedId = Auth::id();
+
+        if (!$followedId) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
+        $followRequest = FollowRequest::where('follower_id', $followerId)
+            ->where('followed_id', $followedId)
+            ->first();
+
+        if (!$followRequest) {
+            return response()->json(['message' => 'Follow request not found'], 404);
+        }
+
+        if (!$followRequest) {
+            return response()->json(['message' => 'Follow request not found'], 404);
+        }
+
         // Delete the corresponding follower entry
-        Follower::where('follower_id', $followRequest->follower_id)
-            ->where('followed_id', $followRequest->followed_id)
+        Follower::where('follower_id', $followerId)
+            ->where('followed_id', $followedId)
             ->delete();
 
         $followRequest->delete();
 
         ActivityFeed::create([
-            'user_id' => $user->id,
+            'user_id' => $followerId,
             'activity_type' => 'user_unfollowed',
             'related_id' => $followRequest->id,
-            'description' => 'User with ID ' . $followRequest->follower_id . ' unfollowed user with ID ' . $followRequest->followed_id,
+            'description' => 'User with ID ' . $followerId . ' rejected follow  user with ID ' . $followedId,
+        ]);
+
+        event(new UserUnfollowed($followRequest));
+
+        return response()->json(['message' => 'follow rejected successfully']);
+    }
+
+    public function unfollow(Request $request)
+    {
+        $request->validate([
+            'followed_id' => 'required|exists:users,id'
+        ]);
+
+        $followedId = $request->input('followed_id');
+        $followerId = Auth::id();
+
+        if (!$followerId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $followRequest = FollowRequest::where('follower_id', $followerId)
+            ->where('followed_id', $followedId)
+            ->first();
+
+        if (!$followRequest) {
+            return response()->json(['message' => 'Follow request not found'], 404);
+        }
+
+        // Delete the corresponding follower entry
+        Follower::where('follower_id', $followerId)
+            ->where('followed_id', $followedId)
+            ->delete();
+
+        $followRequest->delete();
+
+        ActivityFeed::create([
+            'user_id' => $followerId,
+            'activity_type' => 'user_unfollowed',
+            'related_id' => $followRequest->id,
+            'description' => 'User with ID ' . $followerId . ' unfollowed user with ID ' . $followedId,
         ]);
 
         event(new UserUnfollowed($followRequest));
 
         return response()->json(['message' => 'Unfollowed successfully']);
     }
-
     public function checkFollowStatus(User $user)
     {
         $follower = Auth::user();
@@ -178,8 +225,38 @@ class FollowRequestController extends Controller
         return response()->json(['status' => $status]);
     }
 
-    public function getFollowers($id)
+    public function getFollowers()
     {
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $followers = Follower::where('followed_id', $userId)
+            ->where('is_accepted', true)
+            ->with('follower:id,name,profile_picture')
+            ->get()
+            ->map(function ($follower) {
+                return [
+                    'id' => $follower->follower->id,
+                    'name' => $follower->follower->name,
+                    'profile_picture' => $follower->follower->profile_picture_url,
+                ];
+            });
+
+        return response()->json($followers);
+    }
+    public function gettFollowers($id)
+    {
+        // Ensure the user is authenticated
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Retrieve the followers for the specified user ID
         $followers = Follower::where('followed_id', $id)
             ->where('is_accepted', true)
             ->with('follower:id,name,profile_picture')
@@ -188,14 +265,43 @@ class FollowRequestController extends Controller
                 return [
                     'id' => $follower->follower->id,
                     'name' => $follower->follower->name,
-                    'profile_picture' => $follower->follower->profile_picture,
+                    'profile_picture' => $follower->follower->profile_picture_url,
                 ];
             });
 
         return response()->json($followers);
     }
-    public function getFollowed($id)
+    public function getFollowed()
     {
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $followed = Follower::where('follower_id', $userId)
+            ->where('is_accepted', true)
+            ->with('followed:id,name,profile_picture')
+            ->get()
+            ->map(function ($follow) {
+                return [
+                    'id' => $follow->followed->id,
+                    'name' => $follow->followed->name,
+                    'profile_picture' => $follow->followed->profile_picture_url,
+                ];
+            });
+
+        return response()->json($followed);
+    }
+
+    public function gettFollowed($id)
+    {
+
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
         $followed = Follower::where('follower_id', $id)
             ->where('is_accepted', true)
             ->with('followed:id,name,profile_picture')
@@ -204,7 +310,7 @@ class FollowRequestController extends Controller
                 return [
                     'id' => $follow->followed->id,
                     'name' => $follow->followed->name,
-                    'profile_picture' => $follow->followed->profile_picture,
+                    'profile_picture' => $follow->followed->profile_picture_url,
                 ];
             });
 

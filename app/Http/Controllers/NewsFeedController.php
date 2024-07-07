@@ -22,6 +22,7 @@ class NewsFeedController extends Controller
     
     public function index(Request $request)
     {
+        
         $viewWeight = 1;
         $likeWeight = 2;
         $commentWeight = 3;
@@ -62,8 +63,8 @@ class NewsFeedController extends Controller
                 'user' => $item->user ? [
                     'id' => $item->user->id,
                     'name' => $item->user->name,
-                    'profile_picture' => $item->user->profile_picture,
-                ] : null,
+                    'profile_picture_url' => $item->user->profile_picture_url,
+                    ] : null,
             ];
         });
 
@@ -72,6 +73,7 @@ class NewsFeedController extends Controller
 
     public function indexpending(Request $request)
     {
+        
         $viewWeight = 1;
         $likeWeight = 2;
         $commentWeight = 3;
@@ -80,7 +82,7 @@ class NewsFeedController extends Controller
 
         $currentTime = now()->timestamp;
 
-        // Filter and paginate pending news feed items with user data
+        // Filter and paginate approved news feed items with user data
         $newsFeedItems = NewsFeedItem::where('status', 'pending')
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
@@ -109,11 +111,11 @@ class NewsFeedController extends Controller
                 'comments' => $item->comments,
                 'shares' => $item->shares,
                 'created_at' => $item->created_at,
-                'user' => [
+                'user' => $item->user ? [
                     'id' => $item->user->id,
                     'name' => $item->user->name,
-                    'profile_picture' => $item->user->profile_picture,
-                ],
+                    'profile_picture_url' => $item->user->profile_picture_url,
+                    ] : null,
             ];
         });
 
@@ -416,5 +418,18 @@ public function like($newsFeedItemId)
         });
 
         return response()->json($popularContent);
+    }
+
+    public function getByCategory(Request $request, $category)
+    {
+        try {
+            $categories = NewsFeedItem::distinct()->pluck('category');
+
+            return response()->json(['categories' => $categories], 200);
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            Log::error('Error retrieving categories: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to retrieve categories.'], 500);
+        }
     }
 }

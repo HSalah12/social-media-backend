@@ -11,6 +11,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Support\Facades\Cache;
 use Str;
+use DB;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements HasMedia
@@ -133,7 +134,16 @@ public function getFollowStatus($userId)
     {
         return $this->hasMany(FollowRequest::class, 'follows_user_id');
     }
-    
+    public function friendss()
+    {
+        $friendships = $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
+                             ->withPivot('status')
+                             ->wherePivot('status', 'friend')
+                             ->select('users.id', 'users.name', 'users.profile_picture', 'friendships.user_id as pivot_user_id', 'friendships.friend_id as pivot_friend_id', 'friendships.status as pivot_status');
+
+       
+        return $friendships;
+    }
     public function friends()
     {
         return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
@@ -142,18 +152,32 @@ public function getFollowStatus($userId)
 
     public function getFriendshipStatus($friendId)
     {
-        $friendship = $this->friends()->where('friend_id', $friendId)->first();
+        $authUserId = $this->id;
+
+        // Ensure the friend relationship is checked both ways
+        $friendship = DB::table('friend_requests')
+            ->where(function ($query) use ($authUserId, $friendId) {
+                $query->where('sender_id', $authUserId)
+                      ->where('receiver_id', $friendId);
+            })
+            ->orWhere(function ($query) use ($authUserId, $friendId) {
+                $query->where('sender_id', $friendId)
+                      ->where('receiver_id', $authUserId);
+            })
+            ->first();
 
         if ($friendship) {
-            return $friendship->pivot->status;
+            return $friendship->status === 'pending' && $friendship->sender_id == $authUserId
+                ? 'waiting for accept'
+                : $friendship->status;
         }
 
-        return 'not friend';
+        return 'not_friend'; // Return 'not_friend' if no friendship found
     }
     public function isFriendWith(User $otherUser)
 {
-    return $this->friends()->where('friend_id', $otherUser->id)->where('status', 'friend')->exists() ||
-           $otherUser->friends()->where('friend_id', $this->id)->where('status', 'friend')->exists();
+    return $this->friends()->where('friend_id', $otherUser->id)->where('status', 'accepted')->exists() ||
+           $otherUser->friends()->where('friend_id', $this->id)->where('status', 'accepted')->exists();
 }
     // Method to get mutual friends
     public function mutualFriends($otherUser)
@@ -192,7 +216,22 @@ public function getFollowStatus($userId)
                     ->withPivot('status')
                     ->wherePivot('status', 'pending');
     }
+    public function getNumberOfFriendsAttribute()
+    {
+        return $this->friends()->count();
+    }
 
+    public function followerss()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'followed_id', 'follower_id')
+                    ->withPivot('is_accepted')
+                    ->wherePivot('is_accepted', true);
+    }
+
+    public function getNumberOfFollowersAttribute()
+    {
+        return $this->followerss()->count();
+    }
     public function sentFriendRequests()
 {
     return $this->hasMany(FriendRequest::class, 'sender_id');
