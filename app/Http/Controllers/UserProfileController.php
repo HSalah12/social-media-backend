@@ -187,46 +187,8 @@ public function show(Request $request, $id)
 
     $friendRequest = $currentUser->getFriendshipStatus($user->id);
     // Prepare and return the response
-    return response()->json([
-        'message' => 'User data',
-        'data' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'username' => $user->username,
-            'email' => $user->email,
-            'profile_picture_url' => $profilePictureUrl,
-            'cover_photo_url' => $coverPhotoUrl,
-            'date_of_birth' => $user->date_of_birth,
-            'gender' => $user->gender,
-            'city' => $user->city,
-            'state' => $user->state,
-            'country' => $user->country,
-            'bio' => $user->bio,
-            'phone_number' => $user->phone_number,
-            'website_url' => $user->website_url,
-            'social_media_links' => $user->social_media_links,
-            'visibility_settings' => $user->visibility_settings,
-            'privacy_settings' => $user->privacy_settings,
-            'hobbies' => $user->hobbies,
-            'favorite_books' => $user->favorite_books,
-            'favorite_movies' => $user->favorite_movies,
-            'favorite_music' => $user->favorite_music,
-            'languages_spoken' => $user->languages_spoken,
-            'favorite_quotes' => $user->favorite_quotes,
-            'education_history' => $user->education_history,
-            'employment_history' => $user->employment_history,
-            'relationship_status' => $user->relationship_status,
-            'activity_engagement' => $user->activity_engagement,
-            'notification_preferences' => $user->notification_preferences,
-            'security_settings' => $user->security_settings,
-            'achievements' => $user->achievements,
-            'badges' => $user->badges,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-            'friend_status' =>  $friendRequest, // Add friendship status
-            'follow_status' => $followStatus, // Add follow status
-        ]
-    ]);
+    return new UserResource($user);
+    
 }
 
   
