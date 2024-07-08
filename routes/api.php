@@ -18,7 +18,6 @@ use App\Http\Controllers\CountryController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\CityController;
 
-
 Auth::routes();   
 
 // register
@@ -103,8 +102,6 @@ Route::post('/news-feed/{id}/share', 'App\Http\Controllers\ActivityFeedControlle
 Route::post('/news-feed/{id}/like', 'App\Http\Controllers\ActivityFeedController@like')->middleware('auth:api');
 Route::post('/news-feed/{id}/unlike', 'App\Http\Controllers\ActivityFeedController@unlike')->middleware('auth:api');
 
-
-
 //privacy-settings
 Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
 
@@ -116,7 +113,8 @@ Route::get('/news-feed/category/{category}', 'App\Http\Controllers\NewsFeedContr
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
-Route::get('/news-feed/pending', 'App\Http\Controllers\NewsFeedController@indexpending')->middleware('auth:api');
+Route::get('/news-feed/pending/pending', 'App\Http\Controllers\NewsFeedController@indexpending')->middleware('auth:api');
+Route::get('/user/newsfeed', 'App\Http\Controllers\NewsFeedController@getUserNewsFeed')->middleware('auth:api');
 
 //news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');

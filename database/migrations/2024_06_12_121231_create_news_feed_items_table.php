@@ -21,7 +21,7 @@ class CreateNewsFeedItemsTable extends Migration
             $table->boolean('shared')->default(false);
             $table->string('image')->nullable();
             $table->timestamp('recency_factor')->nullable();
-            $table->string('status')->default('pending');
+            $table->string('status')->default('approved');
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
 
