@@ -47,44 +47,54 @@ class RecommendationController extends Controller
     return response()->json($recommendations);
 }
 
-    public function getTrendingContent(Request $request)
-    {
-        $trendingContent = Cache::remember('trending_content', 60, function () {
-            return NewsFeedItem::where('created_at', '>=', Carbon::now()->subDay())
-                ->orderByRaw('(views + likes + comments + shares) DESC')
-                ->take(10)
-                ->get();
-        });
+public function getTrendingContent(Request $request)
+{
+    $trendingContent = Cache::remember('trending_content', 60, function () {
+        $items = NewsFeedItem::where('created_at', '<=', Carbon::now()->subDay())
+            ->orderByRaw('(views + likes + comments + shares) DESC')
+            ->take(10)
+            ->get();
 
-        // Log the trending content for debugging
-        Log::info('Trending Content Retrieved', ['count' => $trendingContent->count()]);
+        // Log the retrieved items count for debugging
+        Log::info('Trending Content Retrieved from Database', ['count' => $items->count()]);
 
-        // Add image_url to each item
-        $trendingContent->each(function ($item) {
-            $item->image_url = $item->image ? url('storage/' . $item->image) : null;
-        });
+        return $items;
+    });
 
-        return response()->json($trendingContent);
-    }
+    // Log the cached trending content for debugging
+    Log::info('Trending Content Retrieved from Cache', ['count' => $trendingContent->count()]);
 
-    public function getPopularContent(Request $request)
-    {
-        $popularContent = Cache::remember('popular_content', 60, function () {
-            return NewsFeedItem::orderByRaw('(views + likes + comments + shares) DESC')
-                ->take(10)
-                ->get();
-        });
+    // Add image_url to each item
+    $trendingContent->each(function ($item) {
+        $item->image_url = $item->image ? url('storage/' . $item->image) : null;
+    });
 
-        // Log the popular content for debugging
-        Log::info('Popular Content Retrieved', ['count' => $popularContent->count()]);
+    return response()->json($trendingContent);
+}
 
-        // Add image_url to each item
-        $popularContent->each(function ($item) {
-            $item->image_url = $item->image ? url('storage/' . $item->image) : null;
-        });
+public function getPopularContent(Request $request)
+{
+    $popularContent = Cache::remember('popular_content', 60, function () {
+        $items = NewsFeedItem::orderByRaw('(views + likes + comments + shares) DESC')
+            ->take(10)
+            ->get();
 
-        return response()->json($popularContent);
-    }
+        // Log the retrieved items count for debugging
+        Log::info('Popular Content Retrieved from Database', ['count' => $items->count()]);
+
+        return $items;
+    });
+
+    // Log the cached popular content for debugging
+    Log::info('Popular Content Retrieved from Cache', ['count' => $popularContent->count()]);
+
+    // Add image_url to each item
+    $popularContent->each(function ($item) {
+        $item->image_url = $item->image ? url('storage/' . $item->image) : null;
+    });
+
+    return response()->json($popularContent);
+}
 
     public function getGeolocationRecommendations(Request $request)
     {
