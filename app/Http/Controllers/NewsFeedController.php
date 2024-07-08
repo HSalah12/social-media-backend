@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Auth;
 use Log;
+use App\Models\ActivityFeed;
+
 
 class NewsFeedController extends Controller
 {
@@ -248,30 +250,35 @@ class NewsFeedController extends Controller
         try {
             // Find the news feed item by ID
             $newsFeedItem = NewsFeedItem::findOrFail($id);
-    
+
             // Check if the user has permission to share the content
             if (!$this->canShare($request->user(), $newsFeedItem)) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-    
+
             // Increment the share count
             $newsFeedItem->increment('shares');
             $newsFeedItem->shared = '1';
 
             // Save the updated item
             $newsFeedItem->save();
-    
-            // Return the updated news feed item
+
+            // Create an activity feed entry
+            ActivityFeed::create([
+                'user_id' => Auth::id(),
+                'activity_type' => 'share',
+                'related_id' => $newsFeedItem->id,
+                'description' => 'Shared a news feed item'
+            ]);
+
             return response()->json(['message' => 'Content shared successfully', 'data' => $newsFeedItem], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'News feed item not found'], 404);
         } catch (\Exception $e) {
-            // Log the exception for debugging
-            \Log::error('Error sharing news feed item: ' . $e->getMessage());
+            Log::error('Error sharing news feed item: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to share content'], 500);
         }
     }
-    
 
 private function canShare($user, $newsFeedItem)
 {
@@ -305,6 +312,14 @@ public function like($newsFeedItemId)
         // Attach the like to the news feed item
         $newsFeedItem->likes()->attach(Auth::id());
 
+        // Create an activity feed entry
+        ActivityFeed::create([
+            'user_id' => Auth::id(),
+            'activity_type' => 'like',
+            'related_id' => $newsFeedItem->id,
+            'description' => 'Liked a news feed item'
+        ]);
+
         return response()->json(['message' => 'News feed item liked']);
     }
 
@@ -322,6 +337,14 @@ public function like($newsFeedItemId)
 
         // Detach the like from the news feed item
         $newsFeedItem->likes()->detach(Auth::id());
+
+        // Create an activity feed entry
+        ActivityFeed::create([
+            'user_id' => Auth::id(),
+            'activity_type' => 'unlike',
+            'related_id' => $newsFeedItem->id,
+            'description' => 'Unliked a news feed item'
+        ]);
 
         return response()->json(['message' => 'News feed item unliked']);
     }

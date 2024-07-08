@@ -20,6 +20,7 @@ use App\Http\Controllers\CityController;
 
 
 Auth::routes();   
+
 // register
 Route::post('register', 'App\Http\Controllers\Auth\RegisterController@register');
 
@@ -57,19 +58,16 @@ Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destr
 Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
 
 //Accept and Rejectfollow and unfollow
-
 Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
 Route::post('/follow-requests/accept', [FollowRequestController::class, 'accept'])->middleware('auth:api');
 Route::post('/follow-requests/reject', [FollowRequestController::class, 'reject'])->middleware('auth:api');
 Route::post('/follow-requests/unfollow', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
 
 // getFollowers
-
 Route::post('/followers', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
 Route::post('/followers/{id}', [FollowRequestController::class, 'gettFollowers'])->middleware('auth:api');
 
 // getFollowed
-
 Route::post('/followed', [FollowRequestController::class, 'getFollowed'])->middleware('auth:api');
 Route::post('/followed/{id}', [FollowRequestController::class, 'gettFollowed'])->middleware('auth:api');
 
@@ -97,11 +95,15 @@ Route::post('friend-requests/reject', 'App\Http\Controllers\FriendRequestControl
 
 //get friends
 Route::get('/friends/{id}', [FriendRequestController::class, 'getFriends'])->middleware('auth:api');
-
 Route::get('/friends', [FriendRequestController::class, 'getAuthUserFriends'])->middleware('auth:api');
 
 //activity-feeds
 Route::get('activity-feed', 'App\Http\Controllers\ActivityFeedController@index')->middleware('auth:api');
+Route::post('/news-feed/{id}/share', 'App\Http\Controllers\ActivityFeedController@share')->middleware('auth:api');
+Route::post('/news-feed/{id}/like', 'App\Http\Controllers\ActivityFeedController@like')->middleware('auth:api');
+Route::post('/news-feed/{id}/unlike', 'App\Http\Controllers\ActivityFeedController@unlike')->middleware('auth:api');
+
+
 
 //privacy-settings
 Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
@@ -110,13 +112,11 @@ Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsCon
 Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
 Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
-
-Route::get('/news-feed/category/{category}', [NewsFeedController::class, 'getByCategory'])->middleware('auth:api');
+Route::get('/news-feed/category/{category}', 'App\Http\Controllers\NewsFeedController@getByCategory')->middleware('auth:api');
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
 Route::get('/news-feed/pending', 'App\Http\Controllers\NewsFeedController@indexpending')->middleware('auth:api');
-
 
 //news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
@@ -133,10 +133,10 @@ Route::post('/newsfeed/{id}/share', 'App\Http\Controllers\NewsFeedController@sha
 Route::get('/news-feed/shared', 'App\Http\Controllers\NewsFeedController@getSharedContent')->middleware('auth:api');
 
 //news-feed like
-Route::post('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@like')->name('content.like');
+Route::post('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@like')->name('content.like')->middleware('auth:api');
 
 //news-feed unlike
-Route::delete('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@unlike')->name('content.unlike');
+Route::delete('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedController@unlike')->name('content.unlike')->middleware('auth:api');
 
 //news-feed comments
 Route::post('/news-feed/{id}/comment', 'App\Http\Controllers\NewsFeedController@comment');
@@ -177,14 +177,11 @@ Route::get('/search-log-analysis', 'App\Http\Controllers\SearchLogController@ind
 Route::get('/trending-content', 'App\Http\Controllers\NewsFeedController@getTrendingContent')->middleware('auth:api');
 Route::get('/popular-content', 'App\Http\Controllers\NewsFeedController@getPopularContent')->middleware('auth:api');
 
-
-
+//  countries states cities
 Route::get('/search/all', 'App\Http\Controllers\SearchController@searchcities')->middleware('auth:api');
 Route::get('/countries', 'App\Http\Controllers\CountryController@index');
 Route::get('/states', 'App\Http\Controllers\StateController@index');
 Route::get('/cities', 'App\Http\Controllers\CityController@index');
 
-
 //  search-users
-
 Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middleware('auth:api');
