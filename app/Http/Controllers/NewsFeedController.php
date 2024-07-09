@@ -110,7 +110,7 @@ class NewsFeedController extends Controller
             'title' => 'required|string',
             'content' => 'required|string',
             'category' => 'required|string',
-            'image' => 'nullable|image|max:2048', // Validate image file
+            'image' => 'nullable|image|max:20048', // Validate image file
         ]);
     
         try {
@@ -157,7 +157,7 @@ class NewsFeedController extends Controller
     {
         $request->validate([
             'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20048',
         ]);
     
         try {
@@ -474,19 +474,19 @@ public function like($newsFeedItemId)
         return response()->json($popularContent);
     }
 
-    public function getByCategory(Request $request, $category)
-    {
-        try {
-            $categories = NewsFeedItem::distinct()->pluck('category');
+    public function getCategories(Request $request)
+{
+    try {
+        // Fetch distinct categories from the NewsFeedItem table
+        $categories = NewsFeedItem::distinct()->pluck('category');
 
-            return response()->json(['categories' => $categories], 200);
-        } catch (\Exception $e) {
-            // Log the exception for debugging
-            Log::error('Error retrieving categories: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to retrieve categories.'], 500);
-        }
+        return response()->json(['categories' => $categories], 200);
+    } catch (\Exception $e) {
+        // Log the exception for debugging
+        Log::error('Error retrieving categories: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to retrieve categories.'], 500);
     }
-
+}
 
     public function getUserNewsFeed(Request $request)
 {
@@ -525,6 +525,47 @@ public function like($newsFeedItemId)
                 'name' => $item->user->name,
                 'profile_picture_url' => $item->user->profile_picture ? url(Storage::url($item->user->profile_picture)) : null,
                 ] : null,
+        ];
+    });
+
+    return response()->json($transformedItems);
+}
+public function gettUserNewsFeed(Request $request, $userId)
+{
+    $viewWeight = 1;
+    $likeWeight = 2;
+    $commentWeight = 3;
+    $shareWeight = 4;
+    $recencyWeight = 0.5; // Adjust weights as needed
+
+    $currentTime = now()->timestamp;
+
+    // Get the authenticated user
+    $authenticatedUserId = Auth::id();
+
+    // Filter and paginate approved news feed items for the specified user
+    $newsFeedItems = NewsFeedItem::where('user_id', $userId)
+        ->where('status', 'approved')
+        ->with('user:id,name,profile_picture')
+        ->orderBy('created_at', 'desc')
+        ->paginate(5);
+
+    // Transform the data to include only necessary user fields and image URL
+    $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+        return [
+            'id' => $item->id,
+            'image_url' => $item->image ? : null, // Generate the full URL for the image
+            'content' => $item->content,
+            'views' => $item->views,
+            'likes' => $item->likes,
+            'comments' => $item->comments,
+            'shares' => $item->shares,
+            'created_at' => $item->created_at,
+            'user' => $item->user ? [
+                'id' => $item->user->id,
+                'name' => $item->user->name,
+                'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
+            ] : null,
         ];
     });
 

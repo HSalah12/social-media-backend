@@ -12,6 +12,7 @@ use Spatie\MediaLibrary\HasMedia\HasMedia;
 use Spatie\MediaLibrary\HasMediaTrait;
 use Illuminate\Support\Facades\Auth;
 use Storage;
+use App\Models\FollowRequest;
 
 class UserProfileController extends Controller 
 {
@@ -150,7 +151,8 @@ public function show(Request $request, $id)
 {
     $user = User::findOrFail($id);
     $currentUser = auth()->user(); // Get the authenticated user
-
+    $authUser = Auth::user();
+    $isRequestReceiver = false;
     if ($request->hasFile('profile_picture')) {
         // Delete old profile picture if exists
         if ($user->profile_picture) {
@@ -186,8 +188,18 @@ public function show(Request $request, $id)
     $followStatus = $currentUser->getFollowStatus($user->id);
 
     $friendRequest = $currentUser->getFriendshipStatus($user->id);
+
+    if ($authUser) {
+        $isRequestReceiver = FollowRequest::where('followed_id', $authUser->id)
+            ->where('follower_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    $userResource = new UserResource($user);
+    $userResource->additional(['is_request_receiver' => $isRequestReceiver]);
     // Prepare and return the response
-    return new UserResource($user);
+    return new UserResource($userResource);
     
 }
 

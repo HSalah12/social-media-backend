@@ -215,4 +215,104 @@ class FriendRequestController extends Controller
  
          return response()->json($friends);
      }
+     public function unfriend(Request $request)
+     {
+         $request->validate([
+             'friend_id' => 'required|exists:users,id'
+         ]);
+ 
+         $authUserId = Auth::id();
+         $friendId = $request->input('friend_id');
+ 
+         if (!$authUserId) {
+             return response()->json(['message' => 'Unauthorized'], 401);
+         }
+ 
+         try {
+             // Start transaction
+             DB::beginTransaction();
+ 
+             // Delete the friendship relation
+             DB::table('friendships')
+                 ->where(function($query) use ($authUserId, $friendId) {
+                     $query->where('user_id', $authUserId)
+                           ->where('friend_id', $friendId);
+                 })
+                 ->orWhere(function($query) use ($authUserId, $friendId) {
+                     $query->where('user_id', $friendId)
+                           ->where('friend_id', $authUserId);
+                 })
+                 ->delete();
+ 
+              // Delete any related friend requests from the friend_requests table
+            DB::table('friend_requests')
+            ->where(function($query) use ($authUserId, $friendId) {
+                $query->where('sender_id', $authUserId)
+                      ->where('receiver_id', $friendId);
+            })
+            ->orWhere(function($query) use ($authUserId, $friendId) {
+                $query->where('sender_id', $friendId)
+                      ->where('receiver_id', $authUserId);
+            })
+            ->delete();
+
+        // Commit the transaction
+        DB::commit();
+ 
+             return response()->json(['message' => 'Unfriended successfully'], 200);
+         } catch (\Exception $e) {
+             // Rollback transaction on error
+             DB::rollBack();
+             return response()->json(['message' => 'Failed to unfriend', 'error' => $e->getMessage()], 500);
+         }
+     }
+
+     public function deleteFriendRequest(Request $request)
+    {
+        $request->validate([
+            'receiver_id' => 'required|exists:users,id'
+        ]);
+
+        $authUserId = Auth::id();
+        $receiverId = $request->input('receiver_id');
+
+        if (!$authUserId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            // Start transaction
+            DB::beginTransaction();
+
+            // Find the friend request
+            $friendRequest = FriendRequest::where(function($query) use ($authUserId, $receiverId) {
+                $query->where('sender_id', $authUserId)
+                      ->where('receiver_id', $receiverId);
+            })->orWhere(function($query) use ($authUserId, $receiverId) {
+                $query->where('sender_id', $receiverId)
+                      ->where('receiver_id', $authUserId);
+            })->first();
+
+            if (!$friendRequest) {
+                return response()->json(['message' => 'Friend request not found'], 404);
+            }
+
+            // Ensure the authenticated user is either the sender or receiver of the friend request
+            if ($friendRequest->sender_id !== $authUserId && $friendRequest->receiver_id !== $authUserId) {
+                return response()->json(['message' => 'Unauthorized to delete this friend request'], 403);
+            }
+
+            // Delete the friend request
+            $friendRequest->delete();
+
+            // Commit the transaction
+            DB::commit();
+
+            return response()->json(['message' => 'Friend request deleted successfully'], 200);
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to delete friend request', 'error' => $e->getMessage()], 500);
+        }
+    }
 }

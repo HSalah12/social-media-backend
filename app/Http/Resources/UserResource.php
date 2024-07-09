@@ -5,24 +5,45 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FollowRequest;
+use App\Models\Follower;
 
 class UserResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return array
-     */
     public function toArray($request)
     {
         $authenticatedUser = Auth::user();
-        $friendStatus = 'not friend';
-        $followStatus = 'not followed';
+        $friendStatus = 'not_friend';
+        $followStatus = 'not_followed';
+        $isRequestReceiver = false;
 
         if ($authenticatedUser) {
             $friendStatus = $authenticatedUser->getFriendshipStatus($this->id);
-            // $followStatus = $authenticatedUser->getFollowStatus($this->id);
+            
+            $followRequest = FollowRequest::where('follower_id', $this->id)
+                ->where('followed_id', $authenticatedUser->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($followRequest) {
+                $followStatus = 'pending';
+                $isRequestReceiver = true;
+            } else {
+                $followRequest = FollowRequest::where('follower_id', $authenticatedUser->id)
+                    ->where('followed_id', $this->id)
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($followRequest) {
+                    $followStatus = 'waiting_for_accept';
+                } else {
+                    $isFollowing = Follower::where('follower_id', $authenticatedUser->id)
+                        ->where('followed_id', $this->id)
+                        ->where('is_accepted', true)
+                        ->exists();
+
+                    $followStatus = $isFollowing ? 'accepted' : 'not_followed';
+                }
+            }
         }
 
         $profilePictureUrl = $this->profile_picture ? Storage::disk('public')->url($this->profile_picture) : null;
@@ -65,10 +86,10 @@ class UserResource extends JsonResource
             'updated_at' => $this->updated_at,
             'active' => $this->active,
             'friend_status' => $friendStatus,
-            'follow_status' => $followStatus, // Add follow status
-            'number_of_friends' => $this->number_of_friends, // Add number of friends
-            'number_of_followers' => $this->number_of_followers, // Add number of friends
-
+            'follow_status' => $followStatus,
+            'number_of_friends' => $this->number_of_friends,
+            'number_of_followers' => $this->number_of_followers,
+            'is_request_receiver' => $isRequestReceiver,
         ];
     }
 }

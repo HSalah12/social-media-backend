@@ -83,6 +83,7 @@ Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionCon
 // follow-status & friend-status
 Route::get('users/follow-status/{followerId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
+Route::post('follow-requests/cancel', [FollowRequestController::class, 'cancelFollowRequest']);
 
 //friend suggestions
 Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@suggest')->middleware('auth:api');
@@ -91,6 +92,8 @@ Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@
 Route::post('friend-requests/send', 'App\Http\Controllers\FriendRequestController@sendFriendRequest')->middleware('auth:api');
 Route::post('friend-requests/accept','App\Http\Controllers\FriendRequestController@acceptFriendRequest')->middleware('auth:api');
 Route::post('friend-requests/reject', 'App\Http\Controllers\FriendRequestController@rejectFriendRequest')->middleware('auth:api');
+Route::post('friend-requests/unfriend', [FriendRequestController::class, 'unfriend']);
+Route::post('friend-request/delete', 'App\Http\Controllers\FriendRequestController@deleteFriendRequest');
 
 //get friends
 Route::get('/friends/{id}', [FriendRequestController::class, 'getFriends'])->middleware('auth:api');
@@ -109,12 +112,13 @@ Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsCon
 Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
 Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
-Route::get('/news-feed/category/{category}', 'App\Http\Controllers\NewsFeedController@getByCategory')->middleware('auth:api');
+Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
 Route::get('/news-feed/pending/pending', 'App\Http\Controllers\NewsFeedController@indexpending')->middleware('auth:api');
 Route::get('/user/newsfeed', 'App\Http\Controllers\NewsFeedController@getUserNewsFeed')->middleware('auth:api');
+Route::get('/user/newsfeed/{userId}', 'App\Http\Controllers\NewsFeedController@gettUserNewsFeed')->middleware('auth:api');
 
 //news-feed filter
 Route::get('/news-feed/filter', 'App\Http\Controllers\NewsFeedController@filter')->middleware('auth:api');
