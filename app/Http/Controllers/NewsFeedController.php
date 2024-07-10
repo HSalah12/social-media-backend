@@ -25,6 +25,8 @@ class NewsFeedController extends Controller
     
     public function index(Request $request)
     {
+        $userId = Auth::id(); // Get the authenticated user's ID
+
         // Filter and paginate approved news feed items with user data
         $newsFeedItems = NewsFeedItem::where('status', 'approved')
             ->with('user:id,name,profile_picture')
@@ -32,7 +34,8 @@ class NewsFeedController extends Controller
             ->paginate(5);
 
         // Transform the data to include only necessary user fields
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId) {
+            $isLiked = $item->likes()->where('user_id', $userId)->exists();
             return [
                 'id' => $item->id,
                 'media_url' => $item->media ?  : null,
@@ -48,6 +51,7 @@ class NewsFeedController extends Controller
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture_url,
                 ] : null,
+                'is_liked' => $isLiked,
             ];
         });
 
@@ -56,17 +60,20 @@ class NewsFeedController extends Controller
 
     public function indexpending(Request $request)
     {
-        // Filter and paginate approved news feed items with user data
+        $userId = Auth::id(); // Get the authenticated user's ID
+
+        // Filter and paginate pending news feed items with user data
         $newsFeedItems = NewsFeedItem::where('status', 'pending')
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
             ->paginate(5);
 
         // Transform the data to include only necessary user fields
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId) {
+            $isLiked = $item->likes()->where('user_id', $userId)->exists();
             return [
                 'id' => $item->id,
-                'media_url' => $item->media ? : null,
+                'media_url' => $item->media ?  : null,
                 'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
@@ -79,6 +86,7 @@ class NewsFeedController extends Controller
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture_url,
                 ] : null,
+                'is_liked' => $isLiked,
             ];
         });
 
@@ -497,21 +505,21 @@ class NewsFeedController extends Controller
 
     public function getUserNewsFeed(Request $request)
     {
-        // Get the authenticated user
-        $user = Auth::user();
+        $userId = Auth::id(); // Get the authenticated user's ID
 
         // Filter and paginate approved news feed items for the authenticated user
-        $newsFeedItems = NewsFeedItem::where('user_id', $user->id)
+        $newsFeedItems = NewsFeedItem::where('user_id', $userId)
             ->where('status', 'approved')
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
             ->paginate(5);
 
         // Transform the data to include only necessary user fields and media URL
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId) {
+            $isLiked = $item->likes()->where('user_id', $userId)->exists();
             return [
                 'id' => $item->id,
-                'media_url' => $item->media ? : null,
+                'media_url' => $item->media ?  : null,
                 'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
@@ -524,6 +532,7 @@ class NewsFeedController extends Controller
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture ? : null,
                 ] : null,
+                'is_liked' => $isLiked,
             ];
         });
 
@@ -532,6 +541,8 @@ class NewsFeedController extends Controller
 
     public function gettUserNewsFeed(Request $request, $userId)
     {
+        $authenticatedUserId = Auth::id(); // Get the authenticated user's ID
+
         // Filter and paginate approved news feed items for the specified user
         $newsFeedItems = NewsFeedItem::where('user_id', $userId)
             ->where('status', 'approved')
@@ -540,7 +551,8 @@ class NewsFeedController extends Controller
             ->paginate(5);
 
         // Transform the data to include only necessary user fields and media URL
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($authenticatedUserId) {
+            $isLiked = $item->likes()->where('user_id', $authenticatedUserId)->exists();
             return [
                 'id' => $item->id,
                 'media_url' => $item->media ?  : null,
@@ -556,6 +568,7 @@ class NewsFeedController extends Controller
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
                 ] : null,
+                'is_liked' => $isLiked,
             ];
         });
 
