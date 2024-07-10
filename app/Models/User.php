@@ -32,7 +32,18 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
         ];
     }
-
+    public function friendsss()
+    {
+        return $this->belongsToMany(User::class, 'friendships', 'user_id', 'friend_id')
+        ->withPivot('status')
+        ->wherePivot('status', 'friend')
+        ->join('user_statuses', 'users.id', '=', 'user_statuses.user_id')
+        ->select('users.id', 'users.name', 'users.profile_picture', 'user_statuses.status as is_online');
+}
+    public function status()
+    {
+        return $this->hasOne(UserStatus::class);
+    }
     public function interactions()
     {
         return $this->hasMany(UserInteraction::class);
@@ -240,10 +251,10 @@ public function getFollowStatus($userId)
     return $this->hasMany(FriendRequest::class, 'sender_id');
 }
 
-public function receivedFriendRequests()
-{
-    return $this->hasMany(FriendRequest::class, 'receiver_id');
-}
+        public function receivedFriendRequests()
+        {
+            return $this->hasMany(FriendRequest::class, 'receiver_id');
+        }
 
         public function verify_token(){
             $token = Str::uuid();
@@ -252,6 +263,5 @@ public function receivedFriendRequests()
             return $token;   
         }
 
-
-
+       
 }

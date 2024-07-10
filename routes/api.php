@@ -1,4 +1,5 @@
 <?php
+
 // routes/api.php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LogoutController;
@@ -56,7 +57,7 @@ Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destr
 // Show account data
 Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
 
-//Accept and Rejectfollow and unfollow
+//Accept and Reject & follow and unfollow
 Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
 Route::post('/follow-requests/accept', [FollowRequestController::class, 'accept'])->middleware('auth:api');
 Route::post('/follow-requests/reject', [FollowRequestController::class, 'reject'])->middleware('auth:api');
@@ -84,6 +85,9 @@ Route::post('/profile-interactions', 'App\Http\Controllers\ProfileInteractionCon
 Route::get('users/follow-status/{followerId}','App\Http\Controllers\FollowRequestController@checkFollowStatus')->middleware('auth:api');
 Route::get('users/{user}/friend-status/{friend}', 'App\Http\Controllers\UserController@friendStatus')->middleware('auth:api');
 Route::post('follow-requests/cancel', [FollowRequestController::class, 'cancelFollowRequest']);
+
+//friend online
+Route::get('/friends/online', [FriendRequestController::class, 'getOnlineFriends'])->middleware('auth:api');
 
 //friend suggestions
 Route::get('/suggest-friends', 'App\Http\Controllers\FriendSuggestionController@suggest')->middleware('auth:api');

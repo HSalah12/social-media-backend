@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\FriendRequest;
 use App\Models\User;
+// use App\Models\UserStatus;
 use App\Events\FriendRequestSent;
 use App\Events\FriendRequestAccepted;
 use App\Events\FriendRequestRejected;
@@ -314,5 +315,30 @@ class FriendRequestController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Failed to delete friend request', 'error' => $e->getMessage()], 500);
         }
+    }
+    public function getOnlineFriends()
+    {
+        $authUserId = Auth::id();
+
+        if (!$authUserId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Retrieve the authenticated user
+        $user = User::find($authUserId);
+
+        // Get the list of online friends
+        $onlineFriends = $user->friendsss()
+            ->where('user_statuses.status', 'online')
+            ->get()
+            ->map(function($friend) {
+                return [
+                    'id' => $friend->id,
+                    'name' => $friend->name,
+                    'profile_picture_url' => $friend->profile_picture_url,
+                ];
+            });
+
+        return response()->json($onlineFriends);
     }
 }

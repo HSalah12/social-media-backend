@@ -16,6 +16,8 @@ class UserStatus extends Model
 {
     return self::where('status', 'online')->get();
 }
+
+
 }
 
 

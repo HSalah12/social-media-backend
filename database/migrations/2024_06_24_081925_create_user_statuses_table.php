@@ -13,13 +13,14 @@ return new class extends Migration
     {
         Schema::create('user_statuses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('status', ['online', 'offline'])->default('offline');
+            $table->unsignedBigInteger('user_id');
+            $table->string('status')->default('offline');
             $table->timestamp('last_seen_at')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
-    
+
     public function down()
     {
         Schema::dropIfExists('user_statuses');
