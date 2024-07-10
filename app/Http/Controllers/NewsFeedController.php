@@ -358,32 +358,47 @@ class NewsFeedController extends Controller
         $request->validate([
             'content' => 'required|string',
         ]);
-
+    
         // Retrieve the authenticated user
         $user = Auth::user();
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
-
+    
         // Find the news feed item
         $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
         if (!$newsFeedItem) {
             return response()->json(['message' => 'News feed item not found'], 404);
         }
-
+    
         // Create a new comment
         $comment = new Comment();
         $comment->content = $request->input('content');
         $comment->user_id = $user->id; // Use the authenticated user's ID
         $comment->news_feed_item_id = $newsFeedItemId;
         $comment->save();
-
+    
         // Update the comments count in the news_feed_items table
         $newsFeedItem->increment('comments');
-
-        return response()->json($comment, 200);
+    
+        // Retrieve the comment with user data
+        $commentWithUser = Comment::where('id', $comment->id)
+            ->with('user:id,name,profile_picture')
+            ->first();
+    
+        return response()->json([
+            'id' => $commentWithUser->id,
+            'content' => $commentWithUser->content,
+            'user' => [
+                'id' => $commentWithUser->user->id,
+                'name' => $commentWithUser->user->name,
+                'profile_picture_url' => $commentWithUser->user->profile_picture_url,
+            ],
+            'created_at' => $commentWithUser->created_at,
+            'updated_at' => $commentWithUser->updated_at,
+        ], 200);
     }
-
+    
     public function deleteComment(Request $request, $commentId)
     {
         // Find the comment
@@ -410,20 +425,34 @@ class NewsFeedController extends Controller
     }
 
     public function getCommentsForNewsFeedItem($newsFeedItemId)
-    {
-        $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
-    
-        if (!$newsFeedItem) {
-            return response()->json(['message' => 'News feed item not found'], 404);
-        }
-    
-        $comments = Comment::where('news_feed_item_id', $newsFeedItemId)
-                    ->leftJoin('users', 'comments.user_id', '=', 'users.id')
-                    ->select('comments.*', 'users.name as user_name')
-                    ->get();
-    
-        return response()->json($comments, 200);
+{
+    $newsFeedItem = NewsFeedItem::find($newsFeedItemId);
+
+    if (!$newsFeedItem) {
+        return response()->json(['message' => 'News feed item not found'], 404);
     }
+
+    $comments = Comment::where('news_feed_item_id', $newsFeedItemId)
+        ->leftJoin('users', 'comments.user_id', '=', 'users.id')
+        ->select('comments.*', 'users.name as user_name', 'users.profile_picture as user_profile_picture')
+        ->get();
+
+    $commentsWithUserDetails = $comments->map(function ($comment) {
+        return [
+            'id' => $comment->id,
+            'content' => $comment->content,
+            'user_id' => $comment->user_id,
+            'news_feed_item_id' => $comment->news_feed_item_id,
+            'created_at' => $comment->created_at,
+            'updated_at' => $comment->updated_at,
+            'user_name' => $comment->user_name,
+            'user_image' => url('storage/' . $comment->user_profile_picture),
+        ];
+    });
+
+    return response()->json($commentsWithUserDetails, 200);
+}
+
 
     public function getTrendingContent(Request $request)
     {

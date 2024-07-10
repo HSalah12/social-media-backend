@@ -70,6 +70,9 @@ class User extends Authenticatable implements HasMedia
 {
     return $this->belongsToMany(User::class, 'followers', 'followed_id', 'user_id');
 }
+
+
+
     public function followers()
     {
         return $this->belongsToMany(User::class, 'follow_requests', 'user_id','follows_user_id', 'followed_id')
@@ -220,7 +223,7 @@ public function getFollowStatus($userId)
     {
         return $this->friends()->count();
     }
-
+   
     public function followerss()
     {
         return $this->belongsToMany(User::class, 'followers', 'followed_id', 'follower_id')

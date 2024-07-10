@@ -63,7 +63,7 @@ Route::post('/follow-requests/reject', [FollowRequestController::class, 'reject'
 Route::post('/follow-requests/unfollow', [FollowRequestController::class, 'unfollow'])->middleware('auth:api');
 
 // getFollowers
-Route::post('/followers', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
+Route::get('/followers', [FollowRequestController::class, 'getFollowers'])->middleware('auth:api');
 Route::post('/followers/{id}', [FollowRequestController::class, 'gettFollowers'])->middleware('auth:api');
 
 // getFollowed

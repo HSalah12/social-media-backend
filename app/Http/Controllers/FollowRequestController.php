@@ -320,4 +320,49 @@ public function accept(Request $request)
 
         return response()->json($followed);
     }
+    public function cancelFollowRequest(Request $request)
+    {
+        $request->validate([
+            'followed_id' => 'required|exists:users,id'
+        ]);
+
+        $followerId = Auth::id();
+        $followedId = $request->input('followed_id');
+
+        if (!$followerId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            // Start transaction
+            DB::beginTransaction();
+
+            // Find the follow request
+            $followRequest = FollowRequest::where('follower_id', $followerId)
+                ->where('followed_id', $followedId)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$followRequest) {
+                return response()->json(['message' => 'Follow request not found'], 404);
+            }
+
+            // Delete the follow request
+            $followRequest->delete();
+
+            // Optionally, delete the follower relationship if it exists
+            Follower::where('follower_id', $followerId)
+                ->where('followed_id', $followedId)
+                ->delete();
+
+            // Commit the transaction
+            DB::commit();
+
+            return response()->json(['message' => 'Follow request canceled successfully'], 200);
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to cancel follow request', 'error' => $e->getMessage()], 500);
+        }
+    }
 }
