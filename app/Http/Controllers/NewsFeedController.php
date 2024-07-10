@@ -25,27 +25,18 @@ class NewsFeedController extends Controller
     
     public function index(Request $request)
     {
-        
-        $viewWeight = 1;
-        $likeWeight = 2;
-        $commentWeight = 3;
-        $shareWeight = 4;
-        $recencyWeight = 0.5; // Adjust weights as needed
-
-        $currentTime = now()->timestamp;
-
         // Filter and paginate approved news feed items with user data
         $newsFeedItems = NewsFeedItem::where('status', 'approved')
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
             ->paginate(5);
 
-       
         // Transform the data to include only necessary user fields
         $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
             return [
                 'id' => $item->id,
-                'image_url' => $item->image ? : null, // Generate the full URL for the image
+                'media_url' => $item->media ?  : null,
+                'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
                 'likes' => $item->likes,
@@ -56,7 +47,7 @@ class NewsFeedController extends Controller
                     'id' => $item->user->id,
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture_url,
-                    ] : null,
+                ] : null,
             ];
         });
 
@@ -65,29 +56,18 @@ class NewsFeedController extends Controller
 
     public function indexpending(Request $request)
     {
-        
-        $viewWeight = 1;
-        $likeWeight = 2;
-        $commentWeight = 3;
-        $shareWeight = 4;
-        $recencyWeight = 0.5; // Adjust weights as needed
-
-        $currentTime = now()->timestamp;
-
         // Filter and paginate approved news feed items with user data
         $newsFeedItems = NewsFeedItem::where('status', 'pending')
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
             ->paginate(5);
 
-       
-      
-
         // Transform the data to include only necessary user fields
         $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
             return [
                 'id' => $item->id,
-                'image_url' => $item->image ? : null, // Generate the full URL for the image
+                'media_url' => $item->media ? : null,
+                'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
                 'likes' => $item->likes,
@@ -98,40 +78,44 @@ class NewsFeedController extends Controller
                     'id' => $item->user->id,
                     'name' => $item->user->name,
                     'profile_picture_url' => $item->user->profile_picture_url,
-                    ] : null,
+                ] : null,
             ];
         });
 
         return response()->json($transformedItems);
     }
+
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string',
             'content' => 'required|string',
             'category' => 'required|string',
-            'image' => 'nullable|image|max:20048', // Validate image file
+            'media' => 'nullable|mimes:jpeg,png,jpg,gif,mp4,mov,ogg,qt|max:50048', // Validate media file
         ]);
-    
+
         try {
-            $imageUrl = null;
-    
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('news_photos', 'public');
-                $imageUrl = url(Storage::url($imagePath));
+            $mediaUrl = null;
+            $mediaType = null;
+
+            if ($request->hasFile('media')) {
+                $mediaPath = $request->file('media')->store('news_media', 'public');
+                $mediaUrl = url(Storage::url($mediaPath));
+                $mediaType = strpos($request->file('media')->getMimeType(), 'image') !== false;
             }
-    
+
             $newsFeedItem = NewsFeedItem::create([
                 'title' => $request->input('title'),
                 'content' => $request->input('content'),
                 'category' => $request->input('category'),
                 'user_id' => $request->user()->id,
-                'image' => $imageUrl,
+                'media' => $mediaUrl,
+                'media_type' => $mediaType,
             ]);
-    
+
             // Invalidate the cache
             Cache::forget('news_feed_items');
-    
+
             return response()->json([
                 'message' => 'News feed item created successfully',
                 'newsFeedItem' => [
@@ -139,11 +123,11 @@ class NewsFeedController extends Controller
                     'title' => $newsFeedItem->title,
                     'content' => $newsFeedItem->content,
                     'category' => $newsFeedItem->category,
-                    'image' => $imageUrl,
+                    'media' => $mediaUrl,
+                    'media_type' => $mediaType,
                     'created_at' => $newsFeedItem->created_at,
                     'updated_at' => $newsFeedItem->updated_at,
                     'user' => new UserResource($newsFeedItem->user), // Use UserResource
-                    
                 ]
             ], 200);
         } catch (\Exception $e) {
@@ -157,28 +141,31 @@ class NewsFeedController extends Controller
     {
         $request->validate([
             'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20048',
+            'media' => 'nullable|mimes:jpeg,png,jpg,gif,mp4,mov,ogg,qt|max:50048', // Validate media file
         ]);
-    
+
         try {
             $newsFeedItem = NewsFeedItem::findOrFail($id);
-    
+
             if ($request->user()->id !== $newsFeedItem->user_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-    
-            $imageUrl = $newsFeedItem->image; // Keep the existing image URL by default
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('news_photos', 'public');
-                $imageUrl = url(Storage::url($imagePath));
-            
-    
-                $newsFeedItem->image = $imageUrl;
+
+            $mediaUrl = $newsFeedItem->media; // Keep the existing media URL by default
+            $mediaType = $newsFeedItem->media_type; // Keep the existing media type by default
+
+            if ($request->hasFile('media')) {
+                $mediaPath = $request->file('media')->store('news_media', 'public');
+                $mediaUrl = url(Storage::url($mediaPath));
+                $mediaType = strpos($request->file('media')->getMimeType(), 'image') !== false;
+
+                $newsFeedItem->media = $mediaUrl;
+                $newsFeedItem->media_type = $mediaType;
             }
-    
+
             $newsFeedItem->content = $request->input('content');
             $newsFeedItem->save();
-    
+
             return response()->json([
                 'message' => 'News feed item updated successfully',
                 'newsFeedItem' => [
@@ -186,11 +173,11 @@ class NewsFeedController extends Controller
                     'title' => $newsFeedItem->title,
                     'content' => $newsFeedItem->content,
                     'category' => $newsFeedItem->category,
-                    'image' => $imageUrl,
+                    'media' => $mediaUrl,
+                    'media_type' => $mediaType,
                     'created_at' => $newsFeedItem->created_at,
                     'updated_at' => $newsFeedItem->updated_at,
                     'user' => new UserResource($newsFeedItem->user), // Use UserResource
-                    
                 ]
             ], 200);
         } catch (ModelNotFoundException $e) {
@@ -200,6 +187,7 @@ class NewsFeedController extends Controller
             return response()->json(['message' => 'Failed to update news feed item.'], 500);
         }
     }
+    
 
     public function destroy(Request $request, $id)
     {
@@ -220,22 +208,22 @@ class NewsFeedController extends Controller
     {
         $category = $request->input('category');
 
-    if ($category) {
-        $newsFeedItems = NewsFeedItem::where('category', $category)->with('user')->get();
-    } else {
-        $newsFeedItems = NewsFeedItem::with('user')->get();
+        if ($category) {
+            $newsFeedItems = NewsFeedItem::where('category', $category)->with('user')->get();
+        } else {
+            $newsFeedItems = NewsFeedItem::with('user')->get();
+        }
+
+        return response()->json($newsFeedItems);
     }
 
-    return response()->json($newsFeedItems);
-    }
-    
     public function approve($id)
     {
         try {
             $newsFeedItem = NewsFeedItem::findOrFail($id);
             $newsFeedItem->status = 'approved';
             $newsFeedItem->save();
-    
+
             return response()->json(['message' => 'News feed item approved successfully']);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'News feed item not found'], 404);
@@ -243,17 +231,17 @@ class NewsFeedController extends Controller
     }
 
     public function reject($id)
-{
-    try {
-        $newsFeedItem = NewsFeedItem::findOrFail($id);
-        $newsFeedItem->status = 'rejected';
-        $newsFeedItem->save();
+    {
+        try {
+            $newsFeedItem = NewsFeedItem::findOrFail($id);
+            $newsFeedItem->status = 'rejected';
+            $newsFeedItem->save();
 
-        return response()->json(['message' => 'News feed item rejected successfully']);
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json(['message' => 'News feed item not found'], 404);
+            return response()->json(['message' => 'News feed item rejected successfully']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        }
     }
-}
 
     public function pending()
     {
@@ -262,7 +250,6 @@ class NewsFeedController extends Controller
         return response()->json(['data' => $pendingItems]);
     }
 
-    
     public function share(Request $request, $id)
     {
         try {
@@ -298,24 +285,22 @@ class NewsFeedController extends Controller
         }
     }
 
-private function canShare($user, $newsFeedItem)
-{
-   
-    // Example permission check: Only the owner or admin can share
-    return $user->id === $newsFeedItem->user_id || $user->hasRole('admin');
-}
+    private function canShare($user, $newsFeedItem)
+    {
+        // Example permission check: Only the owner or admin can share
+        return $user->id === $newsFeedItem->user_id || $user->hasRole('admin');
+    }
 
-public function getSharedContent(Request $request)
-{
-    // Retrieve shared content from the database
-    $sharedContent = NewsFeedItem::where('shared', true)->with('user')->paginate(5);
+    public function getSharedContent(Request $request)
+    {
+        // Retrieve shared content from the database
+        $sharedContent = NewsFeedItem::where('shared', true)->with('user')->paginate(5);
 
-    return response()->json($sharedContent);
-}
-
+        return response()->json($sharedContent);
+    }
 
 
-public function like($newsFeedItemId)
+    public function like($newsFeedItemId)
     {
         $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
 
@@ -366,6 +351,7 @@ public function like($newsFeedItemId)
 
         return response()->json(['message' => 'News feed item unliked']);
     }
+
     public function comment(Request $request, $newsFeedItemId)
     {
         // Validate the request input
@@ -397,6 +383,7 @@ public function like($newsFeedItemId)
 
         return response()->json($comment, 200);
     }
+
     public function deleteComment(Request $request, $commentId)
     {
         // Find the comment
@@ -437,6 +424,7 @@ public function like($newsFeedItemId)
     
         return response()->json($comments, 200);
     }
+
     public function getTrendingContent(Request $request)
     {
         $trendingContent = Cache::remember('trending_content', 60, function () {
@@ -447,11 +435,6 @@ public function like($newsFeedItemId)
         });
 
         Log::info('Trending Content Retrieved', ['count' => $trendingContent->count()]);
-
-        // Add image_url to each item
-        $trendingContent->each(function($item) {
-            $item->image_url = $item->image_url;
-        });
 
         return response()->json($trendingContent);
     }
@@ -466,109 +449,87 @@ public function like($newsFeedItemId)
 
         Log::info('Popular Content Retrieved', ['count' => $popularContent->count()]);
 
-        // Add image_url to each item
-        $popularContent->each(function($item) {
-            $item->image_url = $item->image_url;
-        });
-
         return response()->json($popularContent);
     }
 
     public function getCategories(Request $request)
-{
-    try {
-        // Fetch distinct categories from the NewsFeedItem table
-        $categories = NewsFeedItem::distinct()->pluck('category');
+    {
+        try {
+            // Fetch distinct categories from the NewsFeedItem table
+            $categories = NewsFeedItem::distinct()->pluck('category');
 
-        return response()->json(['categories' => $categories], 200);
-    } catch (\Exception $e) {
-        // Log the exception for debugging
-        Log::error('Error retrieving categories: ' . $e->getMessage());
-        return response()->json(['message' => 'Failed to retrieve categories.'], 500);
+            return response()->json(['categories' => $categories], 200);
+        } catch (\Exception $e) {
+            // Log the exception for debugging
+            Log::error('Error retrieving categories: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to retrieve categories.'], 500);
+        }
     }
-}
 
     public function getUserNewsFeed(Request $request)
-{
-    $viewWeight = 1;
-    $likeWeight = 2;
-    $commentWeight = 3;
-    $shareWeight = 4;
-    $recencyWeight = 0.5; // Adjust weights as needed
+    {
+        // Get the authenticated user
+        $user = Auth::user();
 
-    $currentTime = now()->timestamp;
+        // Filter and paginate approved news feed items for the authenticated user
+        $newsFeedItems = NewsFeedItem::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->with('user:id,name,profile_picture')
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
 
-    // Get the authenticated user
-    $user = Auth::user();
-
-    // Filter and paginate approved news feed items for the authenticated user
-    $newsFeedItems = NewsFeedItem::where('user_id', $user->id)
-        ->where('status', 'approved')
-        ->with('user:id,name,profile_picture')
-        ->orderBy('created_at', 'desc')
-        ->paginate(5);
-
-    
-    // Transform the data to include only necessary user fields and image URL
-    $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
-        return [
-            'id' => $item->id,
-            'image_url' => $item->image ?  : null, // Generate the full URL for the image
-            'content' => $item->content,
-            'views' => $item->views,
-            'likes' => $item->likes,
-            'comments' => $item->comments,
-            'shares' => $item->shares,
-            'created_at' => $item->created_at,
-            'user' => $item->user ? [
-                'id' => $item->user->id,
-                'name' => $item->user->name,
-                'profile_picture_url' => $item->user->profile_picture ? url(Storage::url($item->user->profile_picture)) : null,
+        // Transform the data to include only necessary user fields and media URL
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'media_url' => $item->media ? : null,
+                'media_type' => $item->media_type,
+                'content' => $item->content,
+                'views' => $item->views,
+                'likes' => $item->likes,
+                'comments' => $item->comments,
+                'shares' => $item->shares,
+                'created_at' => $item->created_at,
+                'user' => $item->user ? [
+                    'id' => $item->user->id,
+                    'name' => $item->user->name,
+                    'profile_picture_url' => $item->user->profile_picture ? : null,
                 ] : null,
-        ];
-    });
+            ];
+        });
 
-    return response()->json($transformedItems);
-}
-public function gettUserNewsFeed(Request $request, $userId)
-{
-    $viewWeight = 1;
-    $likeWeight = 2;
-    $commentWeight = 3;
-    $shareWeight = 4;
-    $recencyWeight = 0.5; // Adjust weights as needed
+        return response()->json($transformedItems);
+    }
 
-    $currentTime = now()->timestamp;
+    public function gettUserNewsFeed(Request $request, $userId)
+    {
+        // Filter and paginate approved news feed items for the specified user
+        $newsFeedItems = NewsFeedItem::where('user_id', $userId)
+            ->where('status', 'approved')
+            ->with('user:id,name,profile_picture')
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
 
-    // Get the authenticated user
-    $authenticatedUserId = Auth::id();
+        // Transform the data to include only necessary user fields and media URL
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'media_url' => $item->media ?  : null,
+                'media_type' => $item->media_type,
+                'content' => $item->content,
+                'views' => $item->views,
+                'likes' => $item->likes,
+                'comments' => $item->comments,
+                'shares' => $item->shares,
+                'created_at' => $item->created_at,
+                'user' => $item->user ? [
+                    'id' => $item->user->id,
+                    'name' => $item->user->name,
+                    'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
+                ] : null,
+            ];
+        });
 
-    // Filter and paginate approved news feed items for the specified user
-    $newsFeedItems = NewsFeedItem::where('user_id', $userId)
-        ->where('status', 'approved')
-        ->with('user:id,name,profile_picture')
-        ->orderBy('created_at', 'desc')
-        ->paginate(5);
-
-    // Transform the data to include only necessary user fields and image URL
-    $transformedItems = $newsFeedItems->getCollection()->map(function ($item) {
-        return [
-            'id' => $item->id,
-            'image_url' => $item->image ? : null, // Generate the full URL for the image
-            'content' => $item->content,
-            'views' => $item->views,
-            'likes' => $item->likes,
-            'comments' => $item->comments,
-            'shares' => $item->shares,
-            'created_at' => $item->created_at,
-            'user' => $item->user ? [
-                'id' => $item->user->id,
-                'name' => $item->user->name,
-                'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
-            ] : null,
-        ];
-    });
-
-    return response()->json($transformedItems);
-}
+        return response()->json($transformedItems);
+    }
 }

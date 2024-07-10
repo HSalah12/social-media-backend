@@ -14,11 +14,12 @@ class NewsFeedItem extends Model
     protected $fillable = [
         'title',
         'content',
-        'image',
+        'media',
         'user_id',
         'category',
         'views',
         'likes',
+        'media_type',
         'comments',
         'shares',
         'recency_factor',

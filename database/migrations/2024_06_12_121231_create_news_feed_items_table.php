@@ -19,14 +19,13 @@ class CreateNewsFeedItemsTable extends Migration
             $table->integer('comments')->default(0);
             $table->integer('shares')->default(0);
             $table->boolean('shared')->default(false);
-            $table->string('image')->nullable();
+            $table->string('media')->nullable();
+            $table->boolean('media_type')->nullable();
             $table->timestamp('recency_factor')->nullable();
             $table->string('status')->default('approved');
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
-
             $table->timestamps();
-
             $table->fullText(['title', 'content']);
         });
     }
