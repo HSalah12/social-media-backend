@@ -40,6 +40,8 @@ class User extends Authenticatable implements HasMedia
         ->join('user_statuses', 'users.id', '=', 'user_statuses.user_id')
         ->select('users.id', 'users.name', 'users.profile_picture', 'user_statuses.status as is_online');
 }
+
+
     public function status()
     {
         return $this->hasOne(UserStatus::class);
@@ -262,6 +264,9 @@ public function getFollowStatus($userId)
             Cache::put('user_id',$this->id);
             return $token;   
         }
-
+        public function savedPosts()
+        {
+            return $this->belongsToMany(NewsFeedItem::class, 'saved_posts')->withTimestamps();
+        }
        
 }

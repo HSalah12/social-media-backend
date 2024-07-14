@@ -117,6 +117,7 @@ Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->midd
 Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
 Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
+Route::get('news-feed/{newsFeedItemId}/likes', 'App\Http\Controllers\NewsFeedController@getLikedUsers');
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
@@ -148,6 +149,7 @@ Route::delete('/content/{contentId}/like', 'App\Http\Controllers\NewsFeedControl
 Route::post('/news-feed/{id}/comment', 'App\Http\Controllers\NewsFeedController@comment');
 Route::get('/news-feed-items/{news_feed_item_id}/comments', 'App\Http\Controllers\NewsFeedController@getCommentsForNewsFeedItem');
 Route::delete('comments/{id}', 'App\Http\Controllers\NewsFeedController@deleteComment')->middleware('auth:api');
+Route::put('/comments/{id}', 'App\Http\Controllers\NewsFeedController@updateComment')->middleware('auth:api');
 
 //messages
 Route::post('conversations', 'App\Http\Controllers\ConversationController@createConversation')->middleware('auth:api');
@@ -191,3 +193,7 @@ Route::get('/cities', 'App\Http\Controllers\CityController@index');
 
 //  search-users
 Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middleware('auth:api');
+
+//save & unsave posts
+Route::post('/news-feed/{id}/save', [NewsFeedController::class, 'savePost'])->middleware('auth:api');
+Route::post('/news-feed/{id}/unsave', [NewsFeedController::class, 'unsavePost'])->middleware('auth:api');

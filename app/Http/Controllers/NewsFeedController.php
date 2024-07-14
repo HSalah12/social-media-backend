@@ -5,6 +5,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NewsFeedItem;
+use App\Models\User;
 use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -25,6 +26,8 @@ class NewsFeedController extends Controller
     
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         $userId = Auth::id(); // Get the authenticated user's ID
 
         // Filter and paginate approved news feed items with user data
@@ -34,12 +37,13 @@ class NewsFeedController extends Controller
             ->paginate(5);
 
         // Transform the data to include only necessary user fields
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId) {
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId,$user) {
             $isLiked = $item->likes()->where('user_id', $userId)->exists();
             return [
                 'id' => $item->id,
                 'media_url' => $item->media ?  : null,
                 'media_type' => $item->media_type,
+                'category' => $item->category,
                 'content' => $item->content,
                 'views' => $item->views,
                 'likes' => $item->likes,
@@ -52,6 +56,8 @@ class NewsFeedController extends Controller
                     'profile_picture_url' => $item->user->profile_picture_url,
                 ] : null,
                 'is_liked' => $isLiked,
+                'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
+
             ];
         });
 
@@ -213,17 +219,46 @@ class NewsFeedController extends Controller
         }
     }
     public function filter(Request $request)
-    {
-        $category = $request->input('category');
+{
+    $user = auth()->user();
+    $category = $request->input('category');
 
-        if ($category) {
-            $newsFeedItems = NewsFeedItem::where('category', $category)->with('user')->get();
-        } else {
-            $newsFeedItems = NewsFeedItem::with('user')->get();
-        }
+    $newsFeedItemsQuery = NewsFeedItem::query();
 
-        return response()->json($newsFeedItems);
+    if ($category) {
+        $newsFeedItemsQuery->where('category', $category);
     }
+
+    $newsFeedItems = $newsFeedItemsQuery->with(['user' => function ($query) {
+        $query->select('id', 'name', 'profile_picture');
+    }])
+    ->withCount(['likes', 'comments'])
+    ->get()
+    ->map(function ($item) use ($user) {
+        return [
+            'id' => $item->id,
+            'media_url' => $item->media_url,
+            'media_type' => $item->media_type,
+            'category' => $item->category,
+
+            'content' => $item->content,
+            'views' => $item->views,
+            'likes' => $item->likes_count,
+            'comments' => $item->comments_count,
+            'shares' => $item->shares_count ?? 0,  // Assuming you might have a shares_count if using withCount
+            'created_at' => $item->created_at->toDateTimeString(),
+            'user' => [
+                'id' => $item->user->id,
+                'name' => $item->user->name,
+                'profile_picture_url' => url('storage/' . $item->user->profile_picture),
+            ],
+            'is_liked' => $user ? $item->likes()->where('user_id', $user->id)->exists() : false,
+            'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
+        ];
+    });
+
+    return response()->json($newsFeedItems);
+}
 
     public function approve($id)
     {
@@ -406,7 +441,52 @@ class NewsFeedController extends Controller
             'updated_at' => $commentWithUser->updated_at,
         ], 200);
     }
-    
+    public function updateComment(Request $request, $commentId)
+{
+    // Validate the request input
+    $request->validate([
+        'content' => 'required|string',
+    ]);
+
+    // Retrieve the authenticated user
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    // Find the comment
+    $comment = Comment::find($commentId);
+    if (!$comment) {
+        return response()->json(['message' => 'Comment not found'], 404);
+    }
+
+    // Check if the user is the author of the comment
+    if ($comment->user_id !== $user->id) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    // Update the comment content
+    $comment->content = $request->input('content');
+    $comment->save();
+
+    // Retrieve the updated comment with user data
+    $commentWithUser = Comment::where('id', $comment->id)
+        ->with('user:id,name,profile_picture')
+        ->first();
+
+    return response()->json([
+        'id' => $commentWithUser->id,
+        'content' => $commentWithUser->content,
+        'user' => [
+            'id' => $commentWithUser->user->id,
+            'name' => $commentWithUser->user->name,
+            'profile_picture_url' => $commentWithUser->user->profile_picture_url,
+        ],
+        'created_at' => $commentWithUser->created_at,
+        'updated_at' => $commentWithUser->updated_at,
+    ], 200);
+}
+
     public function deleteComment(Request $request, $commentId)
     {
         // Find the comment
@@ -574,4 +654,51 @@ class NewsFeedController extends Controller
 
         return response()->json($transformedItems);
     }
+    public function getLikedUsers($newsFeedItemId)
+    {
+        try {
+            // Find the news feed item by ID
+            $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
+
+            // Retrieve liked users with their details
+            $likedUsers = $newsFeedItem->likes()->with('user')->get();
+
+            // Return JSON response with liked users data
+            return response()->json(['liked_users' => $likedUsers], 200);
+        } catch (ModelNotFoundException $e) {
+            // Handle case where news feed item is not found
+            return response()->json(['message' => 'News feed item not found'], 404);
+        } catch (\Exception $e) {
+            // Log any unexpected exceptions
+            Log::error('Error retrieving liked users: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to retrieve liked users'], 500);
+        }
+    }
+    public function savePost($newsFeedItemId)
+{
+    $user = Auth::user();
+    $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
+
+    if ($newsFeedItem->saves()->where('user_id', $user->id)->exists()) {
+        return response()->json(['message' => 'Post already saved'], 400);
+    }
+
+    $newsFeedItem->saves()->attach($user->id);
+
+    return response()->json(['message' => 'Post saved successfully']);
+}
+
+public function unsavePost($newsFeedItemId)
+{
+    $user = Auth::user();
+    $newsFeedItem = NewsFeedItem::findOrFail($newsFeedItemId);
+
+    if (!$newsFeedItem->saves()->where('user_id', $user->id)->exists()) {
+        return response()->json(['message' => 'Post not saved'], 400);
+    }
+
+    $newsFeedItem->saves()->detach($user->id);
+
+    return response()->json(['message' => 'Post unsaved successfully']);
+}
 }
