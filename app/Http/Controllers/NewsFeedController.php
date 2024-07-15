@@ -25,44 +25,61 @@ class NewsFeedController extends Controller
 
     
     public function index(Request $request)
-    {
-        $user = auth()->user();
+{
+    $user = auth()->user();
 
-        $userId = Auth::id(); // Get the authenticated user's ID
+    // Filter and paginate approved news feed items with user data
+    $newsFeedItems = NewsFeedItem::where('status', 'approved')
+        ->with('user:id,name,profile_picture')
+        ->orderBy('created_at', 'desc')
+        ->paginate(5);
 
-        // Filter and paginate approved news feed items with user data
-        $newsFeedItems = NewsFeedItem::where('status', 'approved')
-            ->with('user:id,name,profile_picture')
-            ->orderBy('created_at', 'desc')
-            ->paginate(5);
+    // Transform the data to include only necessary user fields
+    $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($user) {
+        $isLiked = $item->likes()->where('user_id', $user->id)->exists();
+        $originalUser = null;
 
-        // Transform the data to include only necessary user fields
-        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId,$user) {
-            $isLiked = $item->likes()->where('user_id', $userId)->exists();
-            return [
-                'id' => $item->id,
-                'media_url' => $item->media ?  : null,
-                'media_type' => $item->media_type,
-                'category' => $item->category,
-                'content' => $item->content,
-                'views' => $item->views,
-                'likes' => $item->likes,
-                'comments' => $item->comments,
-                'shares' => $item->shares,
-                'created_at' => $item->created_at,
-                'user' => $item->user ? [
-                    'id' => $item->user->id,
-                    'name' => $item->user->name,
-                    'profile_picture_url' => $item->user->profile_picture_url,
-                ] : null,
-                'is_liked' => $isLiked,
-                'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
+        if ($item->original_news_feed_item_id) {
+            $originalItem = NewsFeedItem::find($item->original_news_feed_item_id);
+            if ($originalItem) {
+                $originalUser = $originalItem->user()->select('id', 'name', 'profile_picture')->first();
+            }
+        }
 
-            ];
-        });
+        return [
+            'id' => $item->id,
+            'media_url' => $item->media ?: null,
+            'media_type' => $item->media_type,
+            'category' => $item->category,
+            'content' => $item->content,
+            'views' => $item->views,
+            'likes' => $item->likes,
+            'comments' => $item->comments,
+            'shares' => $item->shares,
+            'created_at' => $item->created_at,
+            'user' => [
+                'id' => $item->user->id,
+                'name' => $item->user->name,
+                'profile_picture_url' => $item->user->profile_picture_url,
+            ],
+            'original_user' => $originalUser ? [
+                'id' => $originalUser->id,
+                'name' => $originalUser->name,
+                'profile_picture_url' => $originalUser->profile_picture,
+            ] : null,
+            'is_liked' => $isLiked,
+            'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
+        ];
+    });
 
-        return response()->json($transformedItems);
-    }
+    return response()->json([
+        'current_page' => $newsFeedItems->currentPage(),
+        'last_page' => $newsFeedItems->lastPage(),
+        'data' => $transformedItems,
+    ]);
+}
+
+
 
     public function indexpending(Request $request)
     {
@@ -219,46 +236,53 @@ class NewsFeedController extends Controller
         }
     }
     public function filter(Request $request)
-{
-    $user = auth()->user();
-    $category = $request->input('category');
-
-    $newsFeedItemsQuery = NewsFeedItem::query();
-
-    if ($category) {
-        $newsFeedItemsQuery->where('category', $category);
+    {
+        $user = auth()->user();
+        $category = $request->input('category');
+        $perPage = $request->input('per_page', 5); // Default to 10 items per page if not specified
+    
+        $newsFeedItemsQuery = NewsFeedItem::query()->orderBy('created_at', 'desc');
+    
+        if ($category) {
+            $newsFeedItemsQuery->where('category', $category);
+        }
+    
+        $newsFeedItems = $newsFeedItemsQuery->with(['user' => function ($query) {
+            $query->select('id', 'name', 'profile_picture');
+        }])
+        ->withCount(['likes', 'comments'])
+        ->paginate($perPage);
+    
+        $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($user) {
+            return [
+                'id' => $item->id,
+                'media_url' => $item->media,
+                'media_type' => $item->media_type,
+                'category' => $item->category,
+                'content' => $item->content,
+                'views' => $item->views,
+                'likes' => $item->likes_count,
+                'comments' => $item->comments_count,
+                'shares' => $item->shares_count ?? 0,
+                'created_at' => $item->created_at->toDateTimeString(),
+                'user' => [
+                    'id' => $item->user->id,
+                    'name' => $item->user->name,
+                    'profile_picture_url' => url('storage/' . $item->user->profile_picture),
+                ],
+                'is_liked' => $user ? $item->likes()->where('user_id', $user->id)->exists() : false,
+                'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
+            ];
+        });
+    
+        return response()->json([
+            'data' => $transformedItems,
+            'current_page' => $newsFeedItems->currentPage(),
+            'last_page' => $newsFeedItems->lastPage(),
+            'per_page' => $newsFeedItems->perPage(),
+            'total' => $newsFeedItems->total(),
+        ]);
     }
-
-    $newsFeedItems = $newsFeedItemsQuery->with(['user' => function ($query) {
-        $query->select('id', 'name', 'profile_picture');
-    }])
-    ->withCount(['likes', 'comments'])
-    ->get()
-    ->map(function ($item) use ($user) {
-        return [
-            'id' => $item->id,
-            'media_url' => $item->media_url,
-            'media_type' => $item->media_type,
-            'category' => $item->category,
-
-            'content' => $item->content,
-            'views' => $item->views,
-            'likes' => $item->likes_count,
-            'comments' => $item->comments_count,
-            'shares' => $item->shares_count ?? 0,  // Assuming you might have a shares_count if using withCount
-            'created_at' => $item->created_at->toDateTimeString(),
-            'user' => [
-                'id' => $item->user->id,
-                'name' => $item->user->name,
-                'profile_picture_url' => url('storage/' . $item->user->profile_picture),
-            ],
-            'is_liked' => $user ? $item->likes()->where('user_id', $user->id)->exists() : false,
-            'is_saved' => $user ? $item->saves()->where('user_id', $user->id)->exists() : false,
-        ];
-    });
-
-    return response()->json($newsFeedItems);
-}
 
     public function approve($id)
     {
@@ -294,53 +318,139 @@ class NewsFeedController extends Controller
     }
 
     public function share(Request $request, $id)
-    {
-        try {
-            // Find the news feed item by ID
-            $newsFeedItem = NewsFeedItem::findOrFail($id);
+{
+    try {
+        // Find the news feed item by ID
+        $newsFeedItem = NewsFeedItem::findOrFail($id);
 
-            // Check if the user has permission to share the content
-            if (!$this->canShare($request->user(), $newsFeedItem)) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
+        // Increment the share count
+        $newsFeedItem->increment('shares');
 
-            // Increment the share count
-            $newsFeedItem->increment('shares');
-            $newsFeedItem->shared = '1';
+        // Clone the original news feed item to create a new shared item
+        $sharedNewsFeedItem = $newsFeedItem->replicate();
+        $sharedNewsFeedItem->user_id = Auth::id(); // Set the user ID of the sharer
+        $sharedNewsFeedItem->original_news_feed_item_id = $newsFeedItem->id; // Reference to the original item
+        $sharedNewsFeedItem->shared = true;
+        $sharedNewsFeedItem->save();
 
-            // Save the updated item
-            $newsFeedItem->save();
+        // Load the original user data
+        $originalUser = $newsFeedItem->user()->select('id', 'name', 'profile_picture')->first();
 
-            // Create an activity feed entry
-            ActivityFeed::create([
-                'user_id' => Auth::id(),
-                'activity_type' => 'share',
-                'related_id' => $newsFeedItem->id,
-                'description' => 'Shared a news feed item'
-            ]);
+        // Create an activity feed entry
+        ActivityFeed::create([
+            'user_id' => Auth::id(),
+            'activity_type' => 'share',
+            'related_id' => $sharedNewsFeedItem->id,
+            'description' => 'Shared a news feed item'
+        ]);
 
-            return response()->json(['message' => 'Content shared successfully', 'data' => $newsFeedItem], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'News feed item not found'], 404);
-        } catch (\Exception $e) {
-            Log::error('Error sharing news feed item: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to share content'], 500);
-        }
+        // Add the original user data to the response
+        $sharedNewsFeedItem->original_user = [
+            'id' => $originalUser->id,
+            'name' => $originalUser->name,
+            'profile_picture_url' => $originalUser->profile_picture ? url('storage/' . $originalUser->profile_picture) : null,
+        ];
+
+        // Transform the shared news feed item to include necessary fields
+        $transformedItem = [
+            'id' => $sharedNewsFeedItem->id,
+            'title' => $sharedNewsFeedItem->title,
+            'content' => $sharedNewsFeedItem->content,
+            'category' => $sharedNewsFeedItem->category,
+            'user_id' => $sharedNewsFeedItem->user_id,
+            'views' => $sharedNewsFeedItem->views ?? 0,
+            'likes' => $sharedNewsFeedItem->likes ?? 0,
+            'comments' => $sharedNewsFeedItem->comments ?? 0,
+            'shares' => $sharedNewsFeedItem->shares ?? 0,
+            'shared' => $sharedNewsFeedItem->shared,
+            'media' => $sharedNewsFeedItem->media ? url('storage/' . $sharedNewsFeedItem->media) : null,
+            'media_type' => $sharedNewsFeedItem->media_type,
+            'recency_factor' => $sharedNewsFeedItem->recency_factor,
+            'status' => $sharedNewsFeedItem->status,
+            'latitude' => $sharedNewsFeedItem->latitude,
+            'longitude' => $sharedNewsFeedItem->longitude,
+            'original_news_feed_item_id' => $sharedNewsFeedItem->original_news_feed_item_id,
+            'created_at' => $sharedNewsFeedItem->created_at,
+            'updated_at' => $sharedNewsFeedItem->updated_at,
+            'original_user' => $sharedNewsFeedItem->original_user,
+        ];
+
+        return response()->json(['message' => 'Content shared successfully', 'data' => $transformedItem], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json(['message' => 'News feed item not found'], 404);
+    } catch (\Exception $e) {
+        Log::error('Error sharing news feed item: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to share content', 'error' => $e->getMessage()], 500);
     }
+}
 
-    private function canShare($user, $newsFeedItem)
-    {
-        // Example permission check: Only the owner or admin can share
-        return $user->id === $newsFeedItem->user_id || $user->hasRole('admin');
-    }
+    
+    
+
+
+
+    // private function canShare($user, $newsFeedItem)
+    // {
+    //     // Example permission check: Only the owner or admin can share
+    //     return $user->id === $newsFeedItem->user_id || $user->hasRole('admin');
+    // }
 
     public function getSharedContent(Request $request)
     {
         // Retrieve shared content from the database
-        $sharedContent = NewsFeedItem::where('shared', true)->with('user')->paginate(5);
-
-        return response()->json($sharedContent);
+        $sharedContent = NewsFeedItem::where('shared', true)
+            ->with(['user:id,name,profile_picture'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
+    
+        // Transform the data to match the required format
+        $transformedItems = $sharedContent->getCollection()->map(function ($item) {
+            return [
+                "id" => $item->id,
+                "title" => $item->title,
+                "content" => $item->content,
+                "category" => $item->category,
+                "user_id" => $item->user_id,
+                "views" => $item->views = 0,
+                "likes" => $item->likes = 0,
+                "comments" => $item->comments = 0,
+                "shares" => $item->shares = 0,
+                "shared" => $item->shared = 0,
+                "media" => $item->media ? url('storage/' . $item->media) : null,
+                "media_type" => $item->media_type,
+                "recency_factor" => $item->recency_factor,
+                "status" => $item->status,
+                "latitude" => $item->latitude,
+                "longitude" => $item->longitude,
+                "original_news_feed_item_id" => $item->original_news_feed_item_id,
+                "created_at" => $item->created_at,
+                "updated_at" => $item->updated_at,
+                "user" => [
+                    "id" => $item->user->id,
+                    "name" => $item->user->name,
+                    "profile_picture" => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
+                ],
+            ];
+        });
+    
+        return response()->json([
+            'current_page' => $sharedContent->currentPage(),
+            'data' => $transformedItems,
+            'first_page_url' => $sharedContent->url(1),
+            'from' => $sharedContent->firstItem(),
+            'last_page' => $sharedContent->lastPage(),
+            'last_page_url' => $sharedContent->url($sharedContent->lastPage()),
+            'links' => $sharedContent->linkCollection(),
+            'next_page_url' => $sharedContent->nextPageUrl(),
+            'path' => $sharedContent->path(),
+            'per_page' => $sharedContent->perPage(),
+            'prev_page_url' => $sharedContent->previousPageUrl(),
+            'to' => $sharedContent->lastItem(),
+            'total' => $sharedContent->total(),
+        ]);
     }
+    
+
 
 
     public function like($newsFeedItemId)
@@ -586,20 +696,21 @@ class NewsFeedController extends Controller
     public function getUserNewsFeed(Request $request)
     {
         $userId = Auth::id(); // Get the authenticated user's ID
-
+    
         // Filter and paginate approved news feed items for the authenticated user
-        $newsFeedItems = NewsFeedItem::where('user_id', $userId)
-            ->where('status', 'approved')
+        $newsFeedItems = NewsFeedItem::where('status', 'approved')
+            ->where('user_id', $userId) // Only fetch posts by the authenticated user
             ->with('user:id,name,profile_picture')
             ->orderBy('created_at', 'desc')
             ->paginate(5);
-
+    
         // Transform the data to include only necessary user fields and media URL
         $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($userId) {
             $isLiked = $item->likes()->where('user_id', $userId)->exists();
+            $isSaved = $item->saves()->where('user_id', $userId)->exists(); // Check if the current user has saved the item
             return [
                 'id' => $item->id,
-                'media_url' => $item->media ?  : null,
+                'media_url' => $item->media,
                 'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
@@ -610,14 +721,24 @@ class NewsFeedController extends Controller
                 'user' => $item->user ? [
                     'id' => $item->user->id,
                     'name' => $item->user->name,
-                    'profile_picture_url' => $item->user->profile_picture ? : null,
+                    'profile_picture_url' => $item->user->profile_picture_url,
                 ] : null,
                 'is_liked' => $isLiked,
+                'is_saved' => $isSaved, // Use the result of the check
             ];
         });
+    
+        return response()->json([
+            'data' => $transformedItems,
+            'current_page' => $newsFeedItems->currentPage(),
+            'last_page' => $newsFeedItems->lastPage(),
+            'total' => $newsFeedItems->total(),
 
-        return response()->json($transformedItems);
+        ]);
     }
+    
+
+
 
     public function gettUserNewsFeed(Request $request, $userId)
     {
@@ -633,6 +754,8 @@ class NewsFeedController extends Controller
         // Transform the data to include only necessary user fields and media URL
         $transformedItems = $newsFeedItems->getCollection()->map(function ($item) use ($authenticatedUserId) {
             $isLiked = $item->likes()->where('user_id', $authenticatedUserId)->exists();
+            $isSaved = $item->saves()->where('user_id', $authenticatedUserId)->exists(); // Check if the current user has saved the item
+
             return [
                 'id' => $item->id,
                 'media_url' => $item->media ?  : null,
@@ -649,10 +772,17 @@ class NewsFeedController extends Controller
                     'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
                 ] : null,
                 'is_liked' => $isLiked,
+                'is_saved' => $isSaved, // Use the result of the check
+
             ];
         });
 
-        return response()->json($transformedItems);
+        return response()->json([
+            'data' => $transformedItems,
+            'current_page' => $newsFeedItems->currentPage(),
+            'last_page' => $newsFeedItems->lastPage(),
+            'total' => $newsFeedItems->total(),
+        ]);
     }
     public function getLikedUsers($newsFeedItemId)
     {
@@ -701,4 +831,54 @@ public function unsavePost($newsFeedItemId)
 
     return response()->json(['message' => 'Post unsaved successfully']);
 }
+
+public function getSavedPosts(Request $request)
+{
+    $user = Auth::user();
+
+    // Retrieve saved posts for the authenticated user
+    $savedPosts = $user->savedNewsFeedItems()
+        ->with('user:id,name,profile_picture')
+        ->orderBy('created_at', 'desc')
+        ->paginate(5);
+
+    // Transform the data to include only necessary user fields
+    $transformedItems = $savedPosts->getCollection()->map(function ($item) use ($user) {
+        return [
+            'id' => $item->id,
+            'title' => $item->title,
+            'content' => $item->content,
+            'category' => $item->category,
+            'user_id' => $item->user_id,
+            'views' => $item->views,
+            'likes' => $item->likes,
+            'comments' => $item->comments,
+            'shares' => $item->shares,
+            'shared' => $item->shared,
+            'media' => $item->media ?  : null,
+            'media_type' => $item->media_type,
+            'recency_factor' => $item->recency_factor,
+            'status' => $item->status,
+            'latitude' => $item->latitude,
+            'longitude' => $item->longitude,
+            'original_news_feed_item_id' => $item->original_news_feed_item_id,
+            'created_at' => $item->created_at,
+            'updated_at' => $item->updated_at,
+            'user' => [
+                'id' => $item->user->id,
+                'name' => $item->user->name,
+                'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
+            ],
+            'is_liked' => $item->likes()->where('user_id', $user->id)->exists(),
+            'is_saved' => true, // since these are saved posts
+        ];
+    });
+
+    return response()->json([
+        'current_page' => $savedPosts->currentPage(),
+        'last_page' => $savedPosts->lastPage(),
+        'data' => $transformedItems,
+    ]);
+}
+
 }

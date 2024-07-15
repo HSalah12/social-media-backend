@@ -197,3 +197,4 @@ Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middl
 //save & unsave posts
 Route::post('/news-feed/{id}/save', [NewsFeedController::class, 'savePost'])->middleware('auth:api');
 Route::post('/news-feed/{id}/unsave', [NewsFeedController::class, 'unsavePost'])->middleware('auth:api');
+Route::get('/news-feed/saved', [NewsFeedController::class, 'getSavedPosts'])->middleware('auth:api');

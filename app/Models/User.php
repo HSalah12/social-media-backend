@@ -268,5 +268,8 @@ public function getFollowStatus($userId)
         {
             return $this->belongsToMany(NewsFeedItem::class, 'saved_posts')->withTimestamps();
         }
-       
+        public function savedNewsFeedItems()
+        {
+            return $this->belongsToMany(NewsFeedItem::class, 'saved_posts', 'user_id', 'news_feed_item_id')->withTimestamps();
+        }
 }

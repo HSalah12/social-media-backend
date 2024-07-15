@@ -25,6 +25,8 @@ class CreateNewsFeedItemsTable extends Migration
             $table->string('status')->default('approved');
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
+            $table->unsignedBigInteger('original_news_feed_item_id')->nullable()->after('longitude');
+            $table->foreign('original_news_feed_item_id')->references('id')->on('news_feed_items')->onDelete('cascade');
             $table->timestamps();
             $table->fullText(['title', 'content']);
         });
