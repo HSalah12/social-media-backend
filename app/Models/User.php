@@ -60,6 +60,11 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->cover_photo ? asset(Storage::url($this->cover_photo)) : null;
     }
+    public function newsFeedItems()
+    {
+        return $this->hasMany(NewsFeedItem::class);
+    }
+
     public function likedNewsFeedItems()
     {
         return $this->belongsToMany(NewsFeedItem::class, 'likes', 'user_id', 'news_feed_item_id');

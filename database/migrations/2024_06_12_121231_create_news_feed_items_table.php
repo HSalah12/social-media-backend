@@ -15,7 +15,7 @@ class CreateNewsFeedItemsTable extends Migration
             $table->string('category')->nullable();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->integer('views')->default(0);
-            $table->integer('likes')->default(0);
+            $table->unsignedInteger('likes')->default(0);
             $table->integer('comments')->default(0);
             $table->integer('shares')->default(0);
             $table->boolean('shared')->default(false);
@@ -27,6 +27,7 @@ class CreateNewsFeedItemsTable extends Migration
             $table->decimal('longitude', 11, 8)->nullable();
             $table->unsignedBigInteger('original_news_feed_item_id')->nullable()->after('longitude');
             $table->foreign('original_news_feed_item_id')->references('id')->on('news_feed_items')->onDelete('cascade');
+            $table->timestamp('shared_at')->nullable()->after('updated_at');
             $table->timestamps();
             $table->fullText(['title', 'content']);
         });

@@ -117,7 +117,7 @@ Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->midd
 Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
 Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
-Route::get('news-feed/{newsFeedItemId}/likes', 'App\Http\Controllers\NewsFeedController@getLikedUsers');
+Route::get('/news-feed/{newsFeedItemId}/likes', 'App\Http\Controllers\NewsFeedController@getLikedUsers');
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
