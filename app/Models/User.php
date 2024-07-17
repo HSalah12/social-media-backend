@@ -241,7 +241,10 @@ public function getFollowStatus($userId)
     {
         return $this->friends()->count();
     }
-   
+    public function originalUser()
+    {
+        return $this->belongsTo(User::class, 'original_news_feed_item_id');
+    }
     public function followerss()
     {
         return $this->belongsToMany(User::class, 'followers', 'followed_id', 'follower_id')

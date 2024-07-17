@@ -34,6 +34,11 @@ class NewsFeedItem extends Model
 
         return $this->belongsTo(User::class);
     }
+    public function originalUser()
+    {
+        return $this->belongsTo(User::class, 'original_news_feed_item_id');
+    }
+
     public function comments()
     {
         return $this->hasMany('App\Models\Comment', 'news_feed_item_id');

@@ -273,7 +273,7 @@ class NewsFeedController extends Controller
     
             return [
                 'id' => $item->id,
-                'media_url' => $item->media ?: null,
+                'media_url' => $item->media ? : null,
                 'media_type' => $item->media_type,
                 'category' => $item->category,
                 'content' => $item->content,
@@ -307,7 +307,6 @@ class NewsFeedController extends Controller
         ]);
     }
     
-
     public function approve($id)
     {
         try {
@@ -347,7 +346,7 @@ class NewsFeedController extends Controller
         // Find the news feed item by ID
         $newsFeedItem = NewsFeedItem::findOrFail($id);
 
-        // Increment the share count
+        // Increment the share count on the original item
         $newsFeedItem->increment('shares');
 
         // Clone the original news feed item to create a new shared item
@@ -356,6 +355,13 @@ class NewsFeedController extends Controller
         $sharedNewsFeedItem->original_news_feed_item_id = $newsFeedItem->id; // Reference to the original item
         $sharedNewsFeedItem->shared = true;
         $sharedNewsFeedItem->shared_at = now(); // Set the share time
+
+        // Initialize views, likes, comments, and shares to 0
+        $sharedNewsFeedItem->views = 0;
+        $sharedNewsFeedItem->likes = 0;
+        $sharedNewsFeedItem->comments = 0;
+        $sharedNewsFeedItem->shares = 0;
+
         $sharedNewsFeedItem->save();
 
         // Load the original user data
@@ -384,10 +390,10 @@ class NewsFeedController extends Controller
             'content' => $sharedNewsFeedItem->content,
             'category' => $sharedNewsFeedItem->category,
             'user_id' => $sharedNewsFeedItem->user_id,
-            'views' => $sharedNewsFeedItem->views ?? 0,
-            'likes' => $sharedNewsFeedItem->likes ?? 0,
-            'comments' => $sharedNewsFeedItem->comments ?? 0,
-            'shares' => $sharedNewsFeedItem->shares ?? 0,
+            'views' => $sharedNewsFeedItem->views,
+            'likes' => $sharedNewsFeedItem->likes,
+            'comments' => $sharedNewsFeedItem->comments,
+            'shares' => $sharedNewsFeedItem->shares,
             'shared' => $sharedNewsFeedItem->shared,
             'media' => $sharedNewsFeedItem->media ? url('storage/' . $sharedNewsFeedItem->media) : null,
             'media_type' => $sharedNewsFeedItem->media_type,
@@ -410,6 +416,8 @@ class NewsFeedController extends Controller
         return response()->json(['message' => 'Failed to share content', 'error' => $e->getMessage()], 500);
     }
 }
+
+
 
 
     // private function canShare($user, $newsFeedItem)
@@ -563,6 +571,7 @@ public function unlike($newsFeedItemId)
             ->first();
     
         return response()->json([
+          
             'id' => $commentWithUser->id,
             'content' => $commentWithUser->content,
             'user' => [
@@ -668,6 +677,7 @@ public function unlike($newsFeedItemId)
             'updated_at' => $comment->updated_at,
             'user_name' => $comment->user_name,
             'user_image' => url('storage/' . $comment->user_profile_picture),
+            // 'comments' =>$comment->id->count()
         ];
     });
 
@@ -908,11 +918,11 @@ public function getSavedPosts(Request $request)
 
     // Retrieve saved posts for the authenticated user
     $savedPosts = $user->savedNewsFeedItems()
-        ->with('user:id,name,profile_picture')
+        ->with(['user:id,name,profile_picture', 'originalUser:id,name,profile_picture'])
         ->orderBy('created_at', 'desc')
         ->paginate(5);
 
-    // Transform the data to include only necessary user fields
+    // Transform the data to include necessary fields
     $transformedItems = $savedPosts->getCollection()->map(function ($item) use ($user) {
         return [
             'id' => $item->id,
@@ -920,12 +930,12 @@ public function getSavedPosts(Request $request)
             'content' => $item->content,
             'category' => $item->category,
             'user_id' => $item->user_id,
-            'views' => $item->views,
-            'likes' => $item->likes,
-            'comments' => $item->comments,
-            'shares' => $item->shares,
+            'views' => $item->shared ? 0 : $item->views, // Reset views if shared
+            'likes' => $item->shared ? 0 : $item->likes, // Reset likes if shared
+            'comments' => $item->shared ? 0 : $item->comments, // Reset comments if shared
+            'shares' => $item->shared ? 0 : $item->shares, // Reset shares if shared
             'shared' => $item->shared,
-            'media' => $item->media ?  : null,
+            'media' => $item->media ? url('storage/' . $item->media) : null,
             'media_type' => $item->media_type,
             'recency_factor' => $item->recency_factor,
             'status' => $item->status,
@@ -934,11 +944,16 @@ public function getSavedPosts(Request $request)
             'original_news_feed_item_id' => $item->original_news_feed_item_id,
             'created_at' => $item->created_at,
             'updated_at' => $item->updated_at,
-            'user' => [
+            'user' => $item->user ? [
                 'id' => $item->user->id,
                 'name' => $item->user->name,
                 'profile_picture_url' => $item->user->profile_picture ? url('storage/' . $item->user->profile_picture) : null,
-            ],
+            ] : null,
+            'original_user' => $item->originalUser ? [
+                'id' => $item->originalUser->id,
+                'name' => $item->originalUser->name,
+                'profile_picture_url' => $item->originalUser->profile_picture ? url('storage/' . $item->originalUser->profile_picture) : null,
+            ] : null,
             'is_liked' => $item->likes()->where('user_id', $user->id)->exists(),
             'is_saved' => true, // since these are saved posts
         ];
@@ -950,5 +965,7 @@ public function getSavedPosts(Request $request)
         'data' => $transformedItems,
     ]);
 }
+
+
 
 }
