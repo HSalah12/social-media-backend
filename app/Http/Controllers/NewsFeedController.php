@@ -175,55 +175,56 @@ class NewsFeedController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        $request->validate([
-            'content' => 'required|string',
-            'media' => 'nullable|mimes:jpeg,png,jpg,gif,mp4,mov,ogg,qt|max:50048', // Validate media file
-        ]);
+{
+    $request->validate([
+        'content' => 'required|string',
+        'media' => 'nullable|mimes:jpeg,png,jpg,gif,mp4,mov,ogg,qt|max:50048', // Validate media file
+    ]);
 
-        try {
-            $newsFeedItem = NewsFeedItem::findOrFail($id);
+    try {
+        $newsFeedItem = NewsFeedItem::findOrFail($id);
 
-            if ($request->user()->id !== $newsFeedItem->user_id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            $mediaUrl = $newsFeedItem->media; // Keep the existing media URL by default
-            $mediaType = $newsFeedItem->media_type; // Keep the existing media type by default
-
-            if ($request->hasFile('media')) {
-                $mediaPath = $request->file('media')->store('news_media', 'public');
-                $mediaUrl = url(Storage::url($mediaPath));
-                $mediaType = strpos($request->file('media')->getMimeType(), 'image') !== false;
-
-                $newsFeedItem->media = $mediaUrl;
-                $newsFeedItem->media_type = $mediaType;
-            }
-
-            $newsFeedItem->content = $request->input('content');
-            $newsFeedItem->save();
-
-            return response()->json([
-                'message' => 'News feed item updated successfully',
-                'newsFeedItem' => [
-                    'id' => $newsFeedItem->id,
-                    'title' => $newsFeedItem->title,
-                    'content' => $newsFeedItem->content,
-                    'category' => $newsFeedItem->category,
-                    'media' => $mediaUrl,
-                    'media_type' => $mediaType,
-                    'created_at' => $newsFeedItem->created_at,
-                    'updated_at' => $newsFeedItem->updated_at,
-                    'user' => new UserResource($newsFeedItem->user), // Use UserResource
-                ]
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'News feed item not found'], 404);
-        } catch (\Exception $e) {
-            \Log::error('Error updating news feed item: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to update news feed item.'], 500);
+        if ($request->user()->id !== $newsFeedItem->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+        $mediaUrl = $newsFeedItem->media; // Keep the existing media URL by default
+        $mediaType = $newsFeedItem->media_type; // Keep the existing media type by default
+
+        if ($request->hasFile('media')) {
+            $mediaPath = $request->file('media')->store('news_media', 'public');
+            $mediaUrl = url(Storage::url($mediaPath));
+            $mediaType = strpos($request->file('media')->getMimeType(), 'image') !== false;
+
+            $newsFeedItem->media = $mediaUrl;
+            $newsFeedItem->media_type = $mediaType;
+        }
+
+        $newsFeedItem->content = $request->input('content');
+        $newsFeedItem->save();
+
+        return response()->json([
+            'message' => 'News feed item updated successfully',
+            'newsFeedItem' => [
+                'id' => $newsFeedItem->id,
+                'title' => $newsFeedItem->title,
+                'content' => $newsFeedItem->content,
+                'category' => $newsFeedItem->category,
+                'media' => $mediaUrl,
+                'media_type' => $mediaType,
+                'created_at' => $newsFeedItem->created_at,
+                'updated_at' => $newsFeedItem->updated_at,
+                'user' => new UserResource($newsFeedItem->user), // Use UserResource
+            ]
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json(['message' => 'News feed item not found'], 404);
+    } catch (\Exception $e) {
+        \Log::error('Error updating news feed item: ' . $e->getMessage());
+        return response()->json(['message' => 'Failed to update news feed item.'], 500);
     }
+}
+
     
 
     public function destroy(Request $request, $id)

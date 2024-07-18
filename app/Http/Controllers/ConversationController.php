@@ -1,12 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use Illuminate\Support\Facades\Crypt;
 use App\Models\Conversation;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use App\Models\Message;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Log;
 class ConversationController extends Controller
 {
@@ -53,7 +52,7 @@ class ConversationController extends Controller
             'sender_id' => $senderId,
             'receiver_id' => $receiverId,
             'message' => $encryptedMessage,
-            'is_delivered' => false, 
+            'is_delivered' => false,
         ]);
 
         // Code to send notification to the receiver (e.g., via websockets, push notification, etc.)
@@ -123,22 +122,50 @@ public function getAllChats()
         return response()->json(['message' => 'Unauthorized'], 401);
     }
 
+    // Fetch conversations where the current user is involved
     $conversations = Conversation::where('user_one_id', $userId)
         ->orWhere('user_two_id', $userId)
-        ->with(['userOne:id,name,profile_picture', 'userTwo:id,name,profile_picture', 'messages' => function ($query) {
-            $query->orderBy('created_at', 'desc')->limit(1);
-        }])
+        ->with(['userOne:id,name,profile_picture', 'userTwo:id,name,profile_picture'])
         ->get();
 
-    $conversationsWithLatestMessage = $conversations->map(function ($conversation) {
+    // Log fetched conversations
+    \Log::info('Fetched conversations:', $conversations->toArray());
+
+    // Prepare data for JSON response
+    $conversationsWithLatestMessage = $conversations->map(function ($conversation) use ($userId) {
+        // Get the latest message for the conversation
+        $latestMessage = Message::where('conversation_id', $conversation->id)->latest()->first();
+        $decryptedMessage = null;
+        $encryptedMessage = null;
+
+        if ($latestMessage) {
+            try {
+                $decryptedMessage = Crypt::decryptString($latestMessage->message);
+                $encryptedMessage = $latestMessage->message;
+            } catch (\Exception $e) {
+                \Log::error('Decryption failed for message ID: ' . $latestMessage->id . '. Error: ' . $e->getMessage());
+                // Handle decryption error gracefully
+            }
+        }
+
+        // Determine the other user in the conversation
+        $otherUser = ($conversation->user_one_id == $userId) ? $conversation->userTwo : $conversation->userOne;
+
         return [
             'conversation_id' => $conversation->id,
-            'user_one' => $conversation->userOne,
-            'user_two' => $conversation->userTwo,
-            'latest_message' => $conversation->messages->first(),
+            'user' => [
+                'id' => $otherUser->id,
+                'name' => $otherUser->name,
+                'profile_picture' => $otherUser->profile_picture ? asset('storage/' . $otherUser->profile_picture) : null,
+            ],
+            'latest_message' => $decryptedMessage
         ];
     });
 
     return response()->json($conversationsWithLatestMessage);
 }
+
+
+
+
 }

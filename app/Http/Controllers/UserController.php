@@ -7,6 +7,7 @@ use App\Models\User;
 use Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\UserStatus;
+use App\Http\Resources\UserResource;
 
 class UserController extends Controller
 {
@@ -125,57 +126,53 @@ class UserController extends Controller
         return response()->json(['online_users' => $onlineUsers]);
     }
     public function search(Request $request)
-    {
-        $query = User::query();
-        $isEmptySearch = true;
-        $currentUser = auth()->user();
-    
-        $filters = ['name', 'username', 'email', 'city', 'country'];
-    
-        foreach ($filters as $filter) {
-            if ($request->has($filter) && !empty($request->input($filter))) {
-                $query->where($filter, 'like', '%' . $request->input($filter) . '%');
-                $isEmptySearch = false;
-            }
+{
+    $query = User::query();
+    $isEmptySearch = true;
+    $currentUser = auth()->user();
+
+    $filters = ['name', 'username', 'email', 'city', 'country'];
+
+    foreach ($filters as $filter) {
+        if ($request->has($filter) && !empty($request->input($filter))) {
+            $query->where($filter, 'like', '%' . $request->input($filter) . '%');
+            $isEmptySearch = false;
         }
-    
-        if ($isEmptySearch) {
-            if (session()->has('last_search_results')) {
-                $lastResults = session('last_search_results');
-                return response()->json([
-                    'message' => 'Results from the last valid search:',
-                    'users' => $lastResults['users'],
-                    'total' => $lastResults['total']
-                ], 200);
-            } else {
-                return response()->json(['message' => 'No previous search data found', 'users' => [], 'total' => 0], 200);
-            }
-        }
-    
-        $users = $query->get();
-    
-        if ($users->isEmpty()) {
-            return response()->json(['message' => 'No user found', 'users' => [], 'total' => 0], 200);
-        }
-    
-        $responseData = $users->map(function ($user) use ($currentUser) {
-            $user->profile_picture_url = $user->profile_picture_url;
-            $user->cover_photo_url = $user->cover_photo_url;
-            $user->is_friend = $currentUser->getFriendshipStatus($user->id);
-            return $user->makeHidden(['profile_picture', 'cover_photo']);
-        });
-    
-        session(['last_search_results' => [
-            'users' => $responseData,
-            'total' => $users->count()
-        ]]);
-    
-        return response()->json([
-            'message' => 'Results:',
-            'users' => $responseData,
-            'total' => $users->count(),
-        ], 200);
     }
+
+    if ($isEmptySearch) {
+        if (session()->has('last_search_results')) {
+            $lastResults = session('last_search_results');
+            return response()->json([
+                'message' => 'Results from the last valid search:',
+                'users' => UserResource::collection($lastResults['users']),
+                'total' => $lastResults['total']
+            ], 200);
+        } else {
+            return response()->json(['message' => 'No previous search data found', 'users' => [], 'total' => 0], 200);
+        }
+    }
+
+    $users = $query->get();
+
+    if ($users->isEmpty()) {
+        return response()->json(['message' => 'No user found', 'users' => [], 'total' => 0], 200);
+    }
+
+    $responseData = UserResource::collection($users);
+
+    session(['last_search_results' => [
+        'users' => $users,
+        'total' => $users->count()
+    ]]);
+
+    return response()->json([
+        'message' => 'Results:',
+        'users' => $responseData,
+        'total' => $users->count(),
+    ], 200);
+}
+
     
 
 }

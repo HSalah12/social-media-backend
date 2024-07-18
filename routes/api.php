@@ -114,7 +114,7 @@ Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsCon
 
 //news-feed
 Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
-Route::put('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
+Route::post('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
 Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
 Route::get('/news-feed/{newsFeedItemId}/likes', 'App\Http\Controllers\NewsFeedController@getLikedUsers');
@@ -152,12 +152,12 @@ Route::delete('comments/{id}', 'App\Http\Controllers\NewsFeedController@deleteCo
 Route::put('/comments/{id}', 'App\Http\Controllers\NewsFeedController@updateComment')->middleware('auth:api');
 
 //messages
-Route::post('conversations', 'App\Http\Controllers\ConversationController@createConversation')->middleware('auth:api');
-Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage')->middleware('auth:api');
-Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages')->middleware('auth:api');
+Route::post('/conversations', 'App\Http\Controllers\ConversationController@createConversation');
+Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage');
+Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages');
 
 //get all chats 
-Route::get('/conversations', 'App\Http\Controllers\ConversationController@getAllChats')->middleware('auth:api');
+Route::get('/conversations', 'App\Http\Controllers\ConversationController@getAllChats');
 
 //group-chats
 Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->middleware('auth:api');

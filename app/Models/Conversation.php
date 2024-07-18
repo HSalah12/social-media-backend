@@ -24,4 +24,9 @@ class Conversation extends Model
     {
         return $this->belongsTo(User::class, 'user_two_id');
     }
+     // Define accessor to get the latest message
+     public function getLatestMessageAttribute()
+    {
+        return $this->messages()->latest()->first();
+    }
 }
