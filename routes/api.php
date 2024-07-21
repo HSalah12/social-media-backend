@@ -155,6 +155,7 @@ Route::put('/comments/{id}', 'App\Http\Controllers\NewsFeedController@updateComm
 Route::post('/conversations', 'App\Http\Controllers\ConversationController@createConversation');
 Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage');
 Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages');
+Route::get('conversations/{conversationId}', 'App\Http\Controllers\ConversationController@getConversation');
 
 //get all chats 
 Route::get('/conversations', 'App\Http\Controllers\ConversationController@getAllChats');

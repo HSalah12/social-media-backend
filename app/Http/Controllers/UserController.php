@@ -172,7 +172,11 @@ class UserController extends Controller
         'total' => $users->count(),
     ], 200);
 }
-
+public function show($id)
+{
+    $user = User::findOrFail($id);
+    return new UserResource($user);
+}
     
 
 }

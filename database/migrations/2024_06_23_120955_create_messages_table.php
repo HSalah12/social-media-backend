@@ -20,6 +20,8 @@ class CreateMessagesTable extends Migration
              $table->foreign('conversation_id')->references('id')->on('conversations')->onDelete('cascade');
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('receiver_id')->references('id')->on('users')->onDelete('cascade');
+            $table->boolean('is_delivered')->default(false);
+            $table->boolean('is_read')->default(false);
         });
     }
 

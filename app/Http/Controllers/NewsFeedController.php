@@ -572,7 +572,7 @@ public function unlike($newsFeedItemId)
             ->first();
     
         return response()->json([
-          
+          'message'=>'Comment added',
             'id' => $commentWithUser->id,
             'content' => $commentWithUser->content,
             'user' => [

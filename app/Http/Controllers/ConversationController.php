@@ -60,10 +60,14 @@ class ConversationController extends Controller
         return response()->json([
             'data' => $message, // Encrypted message
             'decrypted_message' => $validated['message'], // Original, unencrypted message
-        ], 201);
+        ], 200);
     }
     
-
+    public function getConversation($conversationId)
+    {
+        $conversation = Conversation::find($conversationId);
+        return response()->json($conversation);
+    }
     public function getMessages($conversationId)
 {
     $messages = Message::where('conversation_id', $conversationId)->get();
@@ -165,7 +169,23 @@ public function getAllChats()
     return response()->json($conversationsWithLatestMessage);
 }
 
+public function markAsDelivered(Request $request, $id)
+{
+    $message = Message::findOrFail($id);
+    $message->is_delivered = true;
+    $message->save();
 
+    return response()->json($message);
+}
+
+public function markAsRead(Request $request, $id)
+{
+    $message = Message::findOrFail($id);
+    $message->is_read = true;
+    $message->save();
+
+    return response()->json($message);
+}
 
 
 }
