@@ -572,16 +572,15 @@ public function unlike($newsFeedItemId)
             ->first();
     
         return response()->json([
-          'message'=>'Comment added',
+            'message'=>'Comment added',
             'id' => $commentWithUser->id,
             'content' => $commentWithUser->content,
-            'user' => [
-                'id' => $commentWithUser->user->id,
-                'name' => $commentWithUser->user->name,
-                'profile_picture_url' => $commentWithUser->user->profile_picture_url,
-            ],
+            'user_id' => $commentWithUser->user->id,
+            'news_feed_item_id' => $commentWithUser->news_feed_item_id,
             'created_at' => $commentWithUser->created_at,
             'updated_at' => $commentWithUser->updated_at,
+            'user_name' => $commentWithUser->user->name,
+            'user_image' => $commentWithUser->user->profile_picture_url,
         ], 200);
     }
     public function updateComment(Request $request, $commentId)
