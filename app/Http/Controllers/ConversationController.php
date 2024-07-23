@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Log;
+use App\Events\MessageSent;
 class ConversationController extends Controller
 {
     public function createConversation(Request $request)
@@ -27,41 +28,38 @@ class ConversationController extends Controller
     }
 
     public function sendMessage(Request $request)
-    {
-        $validated = $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'message' => 'required|string',
-        ]);
+{
+    $validated = $request->validate([
+        'conversation_id' => 'required|exists:conversations,id',
+        'message' => 'required|string',
+    ]);
 
-        $senderId = Auth::id();
+    $senderId = Auth::id();
 
-        if (!$senderId) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        // Retrieve the conversation to determine the receiver_id
-        $conversation = Conversation::findOrFail($validated['conversation_id']);
-
-        // Determine the receiver_id
-        $receiverId = ($conversation->user_one_id == $senderId) ? $conversation->user_two_id : $conversation->user_one_id;
-
-        $encryptedMessage = Crypt::encryptString($validated['message']);
-
-        $message = Message::create([
-            'conversation_id' => $validated['conversation_id'],
-            'sender_id' => $senderId,
-            'receiver_id' => $receiverId,
-            'message' => $encryptedMessage,
-            'is_delivered' => false,
-        ]);
-
-        // Code to send notification to the receiver (e.g., via websockets, push notification, etc.)
-
-        return response()->json([
-            'data' => $message, // Encrypted message
-            'decrypted_message' => $validated['message'], // Original, unencrypted message
-        ], 200);
+    if (!$senderId) {
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
+
+    $conversation = Conversation::findOrFail($validated['conversation_id']);
+    $receiverId = ($conversation->user_one_id == $senderId) ? $conversation->user_two_id : $conversation->user_one_id;
+
+    $encryptedMessage = Crypt::encryptString($validated['message']);
+
+    $message = Message::create([
+        'conversation_id' => $validated['conversation_id'],
+        'sender_id' => $senderId,
+        'receiver_id' => $receiverId,
+        'message' => $encryptedMessage,
+        'is_delivered' => false,
+    ]);
+
+    event(new MessageSent($message));
+
+    return response()->json([
+        'data' => $message,
+        'decrypted_message' => $validated['message'],
+    ], 200);
+}
     
     public function getConversation($conversationId)
     {

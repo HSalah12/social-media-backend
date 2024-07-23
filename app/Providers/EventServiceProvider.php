@@ -33,7 +33,9 @@ class EventServiceProvider extends ServiceProvider
         FriendRequestRejected::class => [
             LogFriendRequestRejected::class,
         ],
-        
+        'App\Events\MessageSent' => [
+        'App\Listeners\SendMessageNotification',
+    ],
     ];
 
     public function boot()
