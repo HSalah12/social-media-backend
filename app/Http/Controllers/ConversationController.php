@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Log;
 use App\Events\UserActionOccurred;
 use App\Events\MessageSent;
+use App\Events\TypingIndicator;
+use Illuminate\Support\Facades\Broadcast;
+use Http;
 class ConversationController extends Controller
 {
     public function createConversation(Request $request)
@@ -186,10 +189,54 @@ public function markAsRead(Request $request, $id)
     $message->is_read = true;
     $message->save();
 
-    event(new UserActionOccurred('Message Readed', auth()->id()));
+    event(new UserActionOccurred('Message Read', auth()->id()));
 
     return response()->json($message);
 }
 
+public function typingIndicator(Request $request)
+{
+    $request->validate([
+        'conversation_id' => 'required|exists:conversations,id',
+        'is_typing' => 'required|boolean',
+    ]);
 
+    $userId = Auth::id();
+    $conversationId = $request->conversation_id;
+    $isTyping = filter_var($request->is_typing, FILTER_VALIDATE_BOOLEAN);
+
+    if (!$userId) {
+        Log::error('Unauthorized access attempt to typingIndicator endpoint.');
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $conversation = Conversation::findOrFail($conversationId);
+    $otherUserId = ($conversation->user_one_id == $userId) ? $conversation->user_two_id : $conversation->user_one_id;
+
+    Log::info('Sending typing indicator to Node.js server', [
+        'user_id' => $userId,
+        'conversation_id' => $conversationId,
+        'is_typing' => $isTyping,
+        'other_user_id' => $otherUserId
+    ]);
+
+    // Send typing event to the WebSocket server
+    $response = Http::post('http://192.168.1.22:1338/typing-indicator', [
+        'user_id' => $userId,
+        'conversation_id' => $conversationId,
+        'is_typing' => $isTyping,
+        'other_user_id' => $otherUserId
+    ]);
+
+    if ($response->successful()) {
+        Log::info('Typing status updated successfully');
+        return response()->json(['message' => 'Typing status updated'], 200);
+    } else {
+        Log::error('Failed to update typing status', [
+            'response_status' => $response->status(),
+            'response_body' => $response->body()
+        ]);
+        return response()->json(['message' => 'Failed to update typing status'], 500);
+    }
+}
 }

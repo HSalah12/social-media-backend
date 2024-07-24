@@ -157,8 +157,15 @@ Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationContr
 Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages');
 Route::get('conversations/{conversationId}', 'App\Http\Controllers\ConversationController@getConversation');
 
+//typing-indicator
+Route::post('/typing-indicator', 'App\Http\Controllers\ConversationController@typingIndicator')->middleware('auth:api');
+
 //get all chats 
 Route::get('/conversations', 'App\Http\Controllers\ConversationController@getAllChats');
+
+//delivered & read 
+Route::post('/conversations/{id}/mark-as-delivered', 'App\Http\Controllers\ConversationController@markAsDelivered')->middleware('auth:api');
+Route::post('/conversations/{id}/mark-as-read', 'App\Http\Controllers\ConversationController@markAsRead')->middleware('auth:api');
 
 //group-chats
 Route::post('/group-chats', 'App\Http\Controllers\GroupChatController@create')->middleware('auth:api');
