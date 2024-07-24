@@ -18,10 +18,7 @@ use App\Http\Controllers\SearchLogController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\CityController;
-use Illuminate\Http\Request;
-use App\Models\Message;
-use App\Events\MessageSent;
-use Illuminate\Support\Facades\Crypt;
+
 Auth::routes();   
 
 // register
@@ -156,34 +153,7 @@ Route::put('/comments/{id}', 'App\Http\Controllers\NewsFeedController@updateComm
 
 //messages
 Route::post('/conversations', 'App\Http\Controllers\ConversationController@createConversation');
-Route::post('conversations/send-message', 'App\Http\Controllers\ConversationController@sendMessage', function (Request $request) {
-    $request->validate([
-        'conversation_id' => 'required|exists:conversations,id',
-        'message' => 'required|string',
-    ]);
-
-    $senderId = $request->user()->id;
-
-    $conversation = \App\Models\Conversation::findOrFail($request->conversation_id);
-    $receiverId = ($conversation->user_one_id == $senderId) ? $conversation->user_two_id : $conversation->user_one_id;
-
-    $encryptedMessage = Crypt::encryptString($request->message);
-
-    $message = Message::create([
-        'conversation_id' => $request->conversation_id,
-        'sender_id' => $senderId,
-        'receiver_id' => $receiverId,
-        'message' => $encryptedMessage,
-        'is_delivered' => false,
-    ]);
-
-    event(new MessageSent($message));
-
-    return response()->json([
-        'data' => $message,
-        'decrypted_message' => $request->message,
-    ], 200);
-});
+Route::post('conversations/send-messag', 'App\Http\Controllers\ConversationController@sendMessage');
 Route::get('conversations/{conversationId}/messages', 'App\Http\Controllers\ConversationController@getMessages');
 Route::get('conversations/{conversationId}', 'App\Http\Controllers\ConversationController@getConversation');
 

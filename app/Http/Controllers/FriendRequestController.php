@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Log;
+use App\Events\UserActionOccurred;
 
 
 class FriendRequestController extends Controller
@@ -52,6 +53,7 @@ class FriendRequestController extends Controller
         $friendRequest->save();
 
         event(new FriendRequestSent($friendRequest, $sender, $receiver));
+        event(new UserActionOccurred('Friend request sent', auth()->id()));
 
         return response()->json([
             'message' => 'Friend request sent',
@@ -81,6 +83,7 @@ class FriendRequestController extends Controller
 
         // Start transaction
         DB::beginTransaction();
+        event(new UserActionOccurred('Friend request accepted', auth()->id()));
 
         try {
             // Fetch the friend request
@@ -148,6 +151,7 @@ class FriendRequestController extends Controller
         $friendRequest->delete();
 
         Log::info("Friend request from sender with ID: {$senderId} has been rejected and deleted.");
+        event(new UserActionOccurred('Friend request rejected', auth()->id()));
 
         return response()->json(['message' => 'Friend request rejected', 'status' => 'rejected'], 200);
     }
@@ -308,6 +312,7 @@ class FriendRequestController extends Controller
 
             // Commit the transaction
             DB::commit();
+            event(new UserActionOccurred('Friend request deleted', auth()->id()));
 
             return response()->json(['message' => 'Friend request deleted successfully'], 200);
         } catch (\Exception $e) {
@@ -338,6 +343,7 @@ class FriendRequestController extends Controller
                     'profile_picture_url' => $friend->profile_picture_url,
                 ];
             });
+            event(new UserActionOccurred('online friends', auth()->id()));
 
         return response()->json($onlineFriends);
     }

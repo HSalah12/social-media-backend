@@ -122,6 +122,7 @@ class UserController extends Controller
     public function getOnlineUsers()
     {
         $onlineUsers = UserStatus::getOnlineUsers();
+        event(new UserActionOccurred('online_users', auth()->id()));
 
         return response()->json(['online_users' => $onlineUsers]);
     }

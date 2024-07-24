@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Services\OTPService;
 use Auth;
+use App\Events\UserActionOccurred;
 
 class ResetPasswordController extends Controller
 {
@@ -27,6 +28,7 @@ class ResetPasswordController extends Controller
         // Update the user's password
         $user->password = \Hash::make($request->password);
         $user->save();
+        event(new UserActionOccurred('Password reset', auth()->id()));
 
         return response()->json(['message' => 'Password reset successfully']);
     }

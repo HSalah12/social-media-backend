@@ -14,6 +14,7 @@ use App\Services\OTPService;
 use Carbon\Carbon;
 use App\Mail\OTPMail;
 use Auth;
+use App\Events\UserActionOccurred;
 
 
 class ForgotPasswordController extends Controller
@@ -44,6 +45,7 @@ class ForgotPasswordController extends Controller
         $otpData = $this->otpService->generateOTP();
         // Generate OTP
         $otp = $otpData['otp'];
+        event(new UserActionOccurred('Password forgot request', auth()->id()));
 
         return response()->json(['message' => 'Reset password email sent','token' => $token, 'otp' => $otp]);
     }
@@ -66,6 +68,7 @@ class ForgotPasswordController extends Controller
         $token = $user->verify_token();
         // Send OTP to the user's email
         Mail::to($user->email)->send(new OTPMail($otp));
+        event(new UserActionOccurred('OTP resent', auth()->id()));
 
         return response()->json(['message' => 'OTP resent successfully','token' => $token, 'otp' => $otp]);
     }

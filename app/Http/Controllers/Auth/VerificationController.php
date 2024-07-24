@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Services\OTPService;
 use Auth;
+use App\Events\UserActionOccurred;
+
 class VerificationController extends Controller
 {
     public function verify(Request $request)
@@ -29,6 +31,7 @@ class VerificationController extends Controller
             // Clear OTP from cache
             Cache::forget($request->email);
             $token = $user->createToken('myToken')->accessToken;
+            event(new UserActionOccurred('User verified', auth()->id()));
 
             // Return a success response
             return response()->json(['message' => 'Email verified successfully', 'token' => $token], 200);

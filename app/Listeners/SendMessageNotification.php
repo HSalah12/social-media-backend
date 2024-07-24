@@ -14,8 +14,10 @@ class SendMessageNotification
     {
         $decryptedMessage = $event->decryptedMessage;
 
-        $response = Http::post('http://192.168.1.22:1338/conversations/send-message', [
-            'message' => $decryptedMessage
+        $response = Http::post('http://192.168.1.22:1338/conversations/send-messag', [
+            'message' => $decryptedMessage,
+            'sender_id' => $event->userId
+
         ]);
 
         if ($response->failed()) {

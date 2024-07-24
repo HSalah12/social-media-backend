@@ -13,6 +13,7 @@ use Spatie\MediaLibrary\HasMediaTrait;
 use Illuminate\Support\Facades\Auth;
 use Storage;
 use App\Models\FollowRequest;
+use App\Events\UserActionOccurred;
 
 class UserProfileController extends Controller 
 {
@@ -89,7 +90,8 @@ class UserProfileController extends Controller
             'achievements' => $validatedData['achievements'],
             'badges' => $validatedData['badges'] ? 1 : 0,  // Convert boolean to integer
         ]);
-    
+        event(new UserActionOccurred('User profile stored', auth()->id()));
+
         return response()->json($user, 200);
     }
     public function update(Request $request, $id)
@@ -128,7 +130,8 @@ class UserProfileController extends Controller
         'badges' => 'nullable|boolean',
         // Add other validations as needed
     ]);
-    
+    event(new UserActionOccurred('User profile updated', auth()->id()));
+
     if ($request->hasFile('profile_picture')) {
         $user->addMediaFromRequest('profile_picture')->toMediaCollection('profile_pictures');
     }
@@ -207,6 +210,7 @@ public function show(Request $request, $id)
     {
         $user = User::findOrFail($id);
         $user->delete();
+        event(new UserActionOccurred('User profile deleted', auth()->id()));
 
         return response()->json([
             'message' => 'User account deleted successfully.'

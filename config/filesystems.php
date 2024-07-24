@@ -72,5 +72,9 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
+'providers' => [
+    // Other service providers
 
+    Illuminate\Filesystem\FilesystemServiceProvider::class,
+],
 ];

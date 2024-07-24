@@ -14,6 +14,7 @@ use App\Events\FollowRequestAccepted;
 use App\Events\FollowRequestRejected;
 use App\Events\UserUnfollowed;
 use Log;
+use App\Events\UserActionOccurred;
 
 class FollowRequestController extends Controller
 {
@@ -56,6 +57,7 @@ class FollowRequestController extends Controller
     ]);
 
     event(new FollowRequestSent($followRequest));
+    event(new UserActionOccurred('Follow request sent', auth()->id()));
 
     return response()->json([
         'message' => 'Follow request sent successfully',
@@ -113,6 +115,7 @@ public function accept(Request $request)
 
     // Trigger an event
     event(new FollowRequestAccepted($followRequest));
+    event(new UserActionOccurred('Follow request accepted', auth()->id()));
 
     return response()->json([
         'message' => 'Follow request accepted',
@@ -159,6 +162,7 @@ public function accept(Request $request)
         ]);
 
         event(new UserUnfollowed($followRequest));
+        event(new UserActionOccurred('Follow request rejected', auth()->id()));
 
         return response()->json(['message' => 'follow rejected successfully']);
     }
@@ -199,6 +203,7 @@ public function accept(Request $request)
         ]);
 
         event(new UserUnfollowed($followRequest));
+        event(new UserActionOccurred('unfollow', auth()->id()));
 
         return response()->json(['message' => 'Unfollowed successfully']);
     }
@@ -357,6 +362,7 @@ public function accept(Request $request)
 
             // Commit the transaction
             DB::commit();
+            event(new UserActionOccurred('Follow request canceled successfully', auth()->id()));
 
             return response()->json(['message' => 'Follow request canceled successfully'], 200);
         } catch (\Exception $e) {

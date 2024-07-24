@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OTPMail;
+use App\Events\UserActionOccurred;
 
 
 class RegisterController extends Controller
@@ -52,7 +53,8 @@ class RegisterController extends Controller
             // Add other fields as needed
         ]);
             $token = $user->verify_token();
-          
+            event(new UserActionOccurred('New user registered', auth()->id()));
+
         // Send OTP via email
         $this->otpService->sendOTPByEmail($user->email, $otp);
 

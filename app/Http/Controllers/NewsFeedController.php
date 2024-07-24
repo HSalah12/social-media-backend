@@ -20,6 +20,7 @@ use App\Http\Resources\UserResource;
 use DB ;
 use Auth;
 use Log;
+use App\Events\UserActionOccurred;
 
 class NewsFeedController extends Controller
 {
@@ -152,6 +153,7 @@ class NewsFeedController extends Controller
 
             // Invalidate the cache
             Cache::forget('news_feed_items');
+            event(new UserActionOccurred('News feed item created', auth()->id()));
 
             return response()->json([
                 'message' => 'News feed item created successfully',
@@ -202,6 +204,7 @@ class NewsFeedController extends Controller
 
         $newsFeedItem->content = $request->input('content');
         $newsFeedItem->save();
+        event(new UserActionOccurred('News feed item updated', auth()->id()));
 
         return response()->json([
             'message' => 'News feed item updated successfully',
@@ -229,6 +232,8 @@ class NewsFeedController extends Controller
 
     public function destroy(Request $request, $id)
     {
+
+        
         try {
             $newsFeedItem = NewsFeedItem::findOrFail($id);
 
@@ -237,6 +242,8 @@ class NewsFeedController extends Controller
             }
 
             $newsFeedItem->delete();
+            event(new UserActionOccurred('News feed item deleted', auth()->id()));
+
             return response()->json(['message' => 'News feed item Deleted'], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'News feed item not found'], 404);
@@ -271,7 +278,7 @@ class NewsFeedController extends Controller
                     $originalCreatedAt = $originalItem->created_at;
                 }
             }
-    
+
             return [
                 'id' => $item->id,
                 'media_url' => $item->media ? : null,
@@ -310,6 +317,9 @@ class NewsFeedController extends Controller
     
     public function approve($id)
     {
+
+        event(new UserActionOccurred('News feed item approved', auth()->id()));
+
         try {
             $newsFeedItem = NewsFeedItem::findOrFail($id);
             $newsFeedItem->status = 'approved';
@@ -323,6 +333,8 @@ class NewsFeedController extends Controller
 
     public function reject($id)
     {
+        event(new UserActionOccurred('News feed item rejected', auth()->id()));
+
         try {
             $newsFeedItem = NewsFeedItem::findOrFail($id);
             $newsFeedItem->status = 'rejected';
@@ -408,6 +420,7 @@ class NewsFeedController extends Controller
             'original_user' => $sharedNewsFeedItem->original_user,
             'shared_at' => $sharedNewsFeedItem->shared_at, // Include the share time
         ];
+        event(new UserActionOccurred('News feed item shared', auth()->id()));
 
         return response()->json(['message' => 'Content shared successfully', 'data' => $transformedItem], 200);
     } catch (ModelNotFoundException $e) {
@@ -504,6 +517,7 @@ class NewsFeedController extends Controller
         'related_id' => $newsFeedItem->id,
         'description' => 'Liked a news feed item'
     ]);
+    event(new UserActionOccurred('News feed item liked', auth()->id()));
 
     // Return the updated number of likes
     return response()->json(['message' => 'News feed item liked', 'likes' => $newsFeedItem->likes()->count()]);
@@ -528,6 +542,7 @@ public function unlike($newsFeedItemId)
         'related_id' => $newsFeedItem->id,
         'description' => 'Unliked a news feed item'
     ]);
+    event(new UserActionOccurred('News feed item unliked', auth()->id()));
 
     // Return the updated number of likes
     return response()->json(['message' => 'News feed item unliked', 'likes' => $newsFeedItem->likes()->count()]);
@@ -570,7 +585,8 @@ public function unlike($newsFeedItemId)
         $commentWithUser = Comment::where('id', $comment->id)
             ->with('user:id,name,profile_picture')
             ->first();
-    
+            event(new UserActionOccurred('News feed item commented', auth()->id()));
+
         return response()->json([
             'message'=>'Comment added',
             'id' => $commentWithUser->id,
@@ -616,6 +632,8 @@ public function unlike($newsFeedItemId)
         ->with('user:id,name,profile_picture')
         ->first();
 
+
+        event(new UserActionOccurred('News feed item comment updated', auth()->id()));
     return response()->json([
         'id' => $commentWithUser->id,
         'content' => $commentWithUser->content,
@@ -650,7 +668,8 @@ public function unlike($newsFeedItemId)
         if ($newsFeedItem) {
             $newsFeedItem->decrement('comments');
         }
-    
+        event(new UserActionOccurred('News feed item comment deleted', auth()->id()));
+
         return response()->json(['message' => 'Comment deleted'], 200);
     }
 
@@ -894,6 +913,7 @@ public function getLikedUsers($newsFeedItemId)
     }
 
     $newsFeedItem->saves()->attach($user->id);
+    event(new UserActionOccurred('Post saved successfully', auth()->id()));
 
     return response()->json(['message' => 'Post saved successfully']);
 }
@@ -908,6 +928,7 @@ public function unsavePost($newsFeedItemId)
     }
 
     $newsFeedItem->saves()->detach($user->id);
+    event(new UserActionOccurred('Post unsaved successfully', auth()->id()));
 
     return response()->json(['message' => 'Post unsaved successfully']);
 }

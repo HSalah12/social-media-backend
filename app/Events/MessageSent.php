@@ -16,10 +16,12 @@ class MessageSent implements ShouldBroadcast
 
     public $message;
     public $decryptedMessage;
+    public $userId;
 
-    public function __construct(Message $message)
+    public function __construct(Message $message, $userId)
     {
         $this->message = $message;
+        $this->userId = $userId;
         $this->decryptedMessage = Crypt::decryptString($message->message);
     }
 
@@ -30,6 +32,9 @@ class MessageSent implements ShouldBroadcast
 
     public function broadcastWith()
     {
-        return ['message' => $this->decryptedMessage];
+        return [
+            'message' => $this->decryptedMessage,
+            'userId' => $this->userId
+        ];
     }
 }

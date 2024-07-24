@@ -9,6 +9,7 @@ use App\Models\User;
 use Hash;
 use App\Models\UserStatus;
 use Illuminate\Support\Facades\Log;
+use App\Events\UserActionOccurred;
 
 class LoginController extends Controller
 {
@@ -41,7 +42,7 @@ class LoginController extends Controller
                 // Log status update failure for debugging
                 Log::error('Failed to update user status', ['user_id' => $user->id]);
             }
-
+            event(new UserActionOccurred('User logged in', auth()->id()));
             return response()->json([
                 'message' => 'Login successful',
                 'user' => [

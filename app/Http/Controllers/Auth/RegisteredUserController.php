@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use App\Events\UserActionOccurred;
 
 class RegisteredUserController extends Controller
 {
@@ -33,6 +34,7 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+        event(new UserActionOccurred('New user registered', auth()->id()));
 
         Auth::login($user);
 

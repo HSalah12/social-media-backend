@@ -6,6 +6,7 @@ use App\Models\UserStatus;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Events\UserActionOccurred;
 
 
 
@@ -27,7 +28,8 @@ class LogoutController extends Controller
                 $token->delete();
             });
         }
-    
+        event(new UserActionOccurred('User logged out', auth()->id()));
+
         return response()->json(['message' => 'Logged out successfully'], 200);
     }
 }    
