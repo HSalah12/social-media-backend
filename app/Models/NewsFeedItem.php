@@ -41,7 +41,7 @@ class NewsFeedItem extends Model
 
     public function comments()
     {
-        return $this->hasMany('App\Models\Comment', 'news_feed_item_id');
+        return $this->hasMany(Comment::class);
     }
     public function calculateScore()
 {

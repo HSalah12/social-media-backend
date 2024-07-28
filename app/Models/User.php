@@ -12,6 +12,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Support\Facades\Cache;
 use Str;
 use DB;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements HasMedia
@@ -41,7 +42,10 @@ class User extends Authenticatable implements HasMedia
         ->select('users.id', 'users.name', 'users.profile_picture', 'user_statuses.status as is_online');
 }
 
-
+public function notificationSettings()
+{
+    return $this->hasOne(NotificationSetting::class);
+}
     public function status()
     {
         return $this->hasOne(UserStatus::class);

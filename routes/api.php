@@ -18,6 +18,8 @@ use App\Http\Controllers\SearchLogController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\CityController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationSettingController;
 
 Auth::routes();   
 
@@ -56,6 +58,7 @@ Route::delete('/profile/{id}', 'App\Http\Controllers\UserProfileController@destr
 
 // Show account data
 Route::get('/profile', 'App\Http\Controllers\UserProfileController@showdata')->middleware('auth:api');
+Route::get('/users/{id}', [UserController::class, 'show']);
 
 //Accept and Reject & follow and unfollow
 Route::post('/follow-requests/send', [FollowRequestController::class, 'send'])->middleware('auth:api');
@@ -206,3 +209,11 @@ Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middl
 Route::post('/news-feed/{id}/save', [NewsFeedController::class, 'savePost'])->middleware('auth:api');
 Route::post('/news-feed/{id}/unsave', [NewsFeedController::class, 'unsavePost'])->middleware('auth:api');
 Route::get('/news-feed/saved', [NewsFeedController::class, 'getSavedPosts'])->middleware('auth:api');
+
+// notifications for testing
+Route::post('/notifications', [NotificationController::class, 'store']);
+Route::get('/notifications', [NotificationController::class, 'index']);
+
+// notifications settings
+// Route::get('/notification-settings', [NotificationSettingController::class, 'show']);
+// Route::post('/notification-settings', [NotificationSettingController::class, 'update']);

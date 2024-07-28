@@ -175,9 +175,14 @@ class UserController extends Controller
 }
 public function show($id)
 {
-    $user = User::findOrFail($id);
+    $user = User::select('id', 'name', 'profile_picture')->findOrFail($id);
+
+    // Ensure profile_picture_url is correctly formed
+    $user->profile_picture_url = $user->profile_picture ? url('storage/' . $user->profile_picture) : null;
+
     return new UserResource($user);
 }
+
     
 
 }
