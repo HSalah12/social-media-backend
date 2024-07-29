@@ -14,5 +14,6 @@ class SendMessageToWebSocketServer
             'message' => $event->message,
             'sender_id' => $event->userId
         ]);
+       
     }
 }

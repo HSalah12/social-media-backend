@@ -44,6 +44,8 @@ class CreateUsersTable extends Migration
             $table->json('security_settings')->nullable();
             $table->json('achievements')->nullable();
             $table->boolean('badges')->default(false);
+            $table->boolean('email_notifications')->default(true);
+            $table->boolean('push_notifications')->default(true);
             $table->timestamps();
         });
     }

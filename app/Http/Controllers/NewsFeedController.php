@@ -283,6 +283,7 @@ class NewsFeedController extends Controller
 
             return [
                 'id' => $item->id,
+                'title' => $item->title,
                 'media_url' => $item->media ? : null,
                 'media_type' => $item->media_type,
                 'category' => $item->category,

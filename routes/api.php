@@ -19,7 +19,7 @@ use App\Http\Controllers\CountryController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\NotificationSettingsController;
 
 Auth::routes();   
 
@@ -116,7 +116,7 @@ Route::post('/news-feed/{id}/unlike', 'App\Http\Controllers\ActivityFeedControll
 Route::post('/privacy-settings/update', 'App\Http\Controllers\PrivacySettingsController@update')->middleware('auth:api');
 
 //news-feed
-Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store')->middleware('auth:api');
+Route::post('/news-feed', 'App\Http\Controllers\NewsFeedController@store') ->middleware('auth:api');
 Route::post('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')->middleware('auth:api');
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
 Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
@@ -215,5 +215,5 @@ Route::post('/notifications', [NotificationController::class, 'store']);
 Route::get('/notifications', [NotificationController::class, 'index']);
 
 // notifications settings
-// Route::get('/notification-settings', [NotificationSettingController::class, 'show']);
-// Route::post('/notification-settings', [NotificationSettingController::class, 'update']);
+Route::get('/notification-settings', [NotificationSettingsController::class,'index'])->middleware('auth:api');
+Route::post('/notification-settings', [NotificationSettingsController::class,'update'])->middleware('auth:api');
