@@ -154,34 +154,48 @@ class UserController extends Controller
         }
     }
 
-    $users = $query->get();
+    try {
+        $users = $query->get();
 
-    if ($users->isEmpty()) {
-        return response()->json(['message' => 'No user found', 'users' => [], 'total' => 0], 200);
+        if ($users->isEmpty()) {
+            return response()->json(['message' => 'No user found', 'users' => [], 'total' => 0], 200);
+        }
+
+        session(['last_search_results' => [
+            'users' => $users,
+            'total' => $users->count()
+        ]]);
+
+        return response()->json([
+            'message' => 'Results:',
+            'users' => UserResource::collection($users),
+            'total' => $users->count(),
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error executing search query: ' . $e->getMessage(), [
+            'query' => $query->toSql(),
+            'bindings' => $query->getBindings()
+        ]);
+
+        return response()->json(['message' => 'An error occurred while executing the search query.'], 500);
     }
-
-    $responseData = UserResource::collection($users);
-
-    session(['last_search_results' => [
-        'users' => $users,
-        'total' => $users->count()
-    ]]);
-
-    return response()->json([
-        'message' => 'Results:',
-        'users' => $responseData,
-        'total' => $users->count(),
-    ], 200);
 }
+
 public function show($id)
 {
-    $user = User::select('id', 'name', 'profile_picture')->findOrFail($id);
+    try {
+        $user = User::select('id', 'name', 'profile_picture')->findOrFail($id);
 
-    // Ensure profile_picture_url is correctly formed
-    $user->profile_picture_url = $user->profile_picture ? url('storage/' . $user->profile_picture) : null;
+        $user->profile_picture_url = $user->profile_picture ? url('storage/' . $user->profile_picture) : null;
 
-    return new UserResource($user);
+        return new UserResource($user);
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json(['message' => 'User not found'], 404);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'An error occurred while fetching the user.'], 500);
+    }
 }
+
 
     
 

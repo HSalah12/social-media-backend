@@ -9,14 +9,20 @@ class Notification extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'title',
-        'message',
-        'user_id',
-    ];
+    protected $fillable = ['title', 'message', 'receiver_id', 'sender_id'];
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function markAsRead()
+{
+    $this->update(['read_at' => now()]);
+}
 }

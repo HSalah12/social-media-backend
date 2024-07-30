@@ -121,6 +121,7 @@ Route::post('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@update')
 Route::delete('/news-feed/{id}', 'App\Http\Controllers\NewsFeedController@destroy')->middleware('auth:api');
 Route::get('/news-feed/categories', [NewsFeedController::class, 'getCategories']);
 Route::get('/news-feed/{newsFeedItemId}/likes', 'App\Http\Controllers\NewsFeedController@getLikedUsers');
+Route::post('newsfeed/getById', [NewsFeedController::class, 'getById']);
 
 // Aggregate
 Route::get('/news-feed', 'App\Http\Controllers\NewsFeedController@index')->middleware('auth:api');
@@ -203,7 +204,7 @@ Route::get('/states', 'App\Http\Controllers\StateController@index');
 Route::get('/cities', 'App\Http\Controllers\CityController@index');
 
 //  search-users
-Route::get('/users/search', 'App\Http\Controllers\UserController@search')->middleware('auth:api');
+Route::get('/users', 'App\Http\Controllers\UserController@search')->middleware('auth:api');
 
 //save & unsave posts
 Route::post('/news-feed/{id}/save', [NewsFeedController::class, 'savePost'])->middleware('auth:api');
@@ -211,9 +212,12 @@ Route::post('/news-feed/{id}/unsave', [NewsFeedController::class, 'unsavePost'])
 Route::get('/news-feed/saved', [NewsFeedController::class, 'getSavedPosts'])->middleware('auth:api');
 
 // notifications for testing
-Route::post('/notifications', [NotificationController::class, 'store']);
 Route::get('/notifications', [NotificationController::class, 'index']);
+Route::get('/notifications/user', [NotificationController::class, 'userNotifications'])->middleware('auth:api');
 
 // notifications settings
 Route::get('/notification-settings', [NotificationSettingsController::class,'index'])->middleware('auth:api');
 Route::post('/notification-settings', [NotificationSettingsController::class,'update'])->middleware('auth:api');
+
+// routes/api.php
+Route::post('/notifications/{id}/tap', [NotificationController::class, 'handleTap'])->middleware('auth:api');

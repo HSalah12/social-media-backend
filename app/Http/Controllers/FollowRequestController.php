@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\FollowRequest;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\ActivityFeed;
 use App\Models\Follower;
@@ -55,7 +56,12 @@ class FollowRequestController extends Controller
         'related_id' => $followRequest->id,
         'description' => 'Follow request sent to user with ID ' . $followed_id,
     ]);
-
+    Notification::create([
+        'user_id' => Auth::id(),
+        'title' => 'follow_request_sent',
+        'message' => 
+        'Follow sent by user with ID ' . $follower_id,
+    ]);
     event(new FollowRequestSent($followRequest));
     event(new UserActionOccurred('Follow request sent', auth()->id()));
 
@@ -112,7 +118,12 @@ public function accept(Request $request)
         'related_id' => $followRequest->id,
         'description' => 'Follow request accepted by user with ID ' . $followedId,
     ]);
-
+    Notification::create([
+        'user_id' => Auth::id(),
+        'title' => 'follow_request_accepted',
+        'message' => 
+        'Follow request accepted by user with ID ' . $followedId,
+    ]);
     // Trigger an event
     event(new FollowRequestAccepted($followRequest));
     event(new UserActionOccurred('Follow request accepted', auth()->id()));
@@ -160,7 +171,12 @@ public function accept(Request $request)
             'related_id' => $followRequest->id,
             'description' => 'User with ID ' . $followerId . ' rejected follow  user with ID ' . $followedId,
         ]);
-
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'follow_request_rejected',
+            'message' => 
+            'Follow request rejected by user with ID ' . $followedId,
+        ]);
         event(new UserUnfollowed($followRequest));
         event(new UserActionOccurred('Follow request rejected', auth()->id()));
 

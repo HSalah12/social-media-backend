@@ -12,7 +12,7 @@ use App\Models\NewsFeedItem; // Import NewsFeedItem model
 class ActivityFeedController extends Controller
 {
     public function index()
-    {
+    { 
         $user = Auth::user();
 
         if (!$user) {

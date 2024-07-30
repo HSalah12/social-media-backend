@@ -27,36 +27,43 @@ class SearchController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
         ]);
 
-        // Build the query
-        $results = NewsFeedItem::whereRaw(
-            "MATCH(title, content) AGAINST(? IN BOOLEAN MODE)",
-            [$query]
-        );
+        try {
+            // Build the query
+            $results = NewsFeedItem::whereRaw(
+                "MATCH(title, content) AGAINST(? IN BOOLEAN MODE)",
+                [$query]
+            );
 
-        // Apply category filter
-        if ($category) {
-            $results->where('category', $category);
+            // Apply category filter
+            if ($category) {
+                $results->where('category', $category);
+            }
+
+            // Apply date range filter
+            if ($dateRange) {
+                [$startDate, $endDate] = explode(':', $dateRange);
+                $results->whereBetween('created_at', [$startDate, $endDate]);
+            }
+
+            // Apply sorting
+            $results->orderBy($sortBy, $sortOrder);
+
+            // Log the final query for debugging
+            Log::info("Search query: ", ['query' => $results->toSql(), 'bindings' => $results->getBindings()]);
+
+            // Get the results
+            $results = $results->get();
+
+            // Return the search results
+            return response()->json($results);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'No results found for the specified query.'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error executing search query: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while executing the search query.'], 500);
         }
-
-        // Apply date range filter
-        if ($dateRange) {
-            [$startDate, $endDate] = explode(':', $dateRange);
-            $results->whereBetween('created_at', [$startDate, $endDate]);
-        }
-
-        // Apply sorting
-        $results->orderBy($sortBy, $sortOrder);
-
-        // Log the final query for debugging
-        Log::info("Search query: ", ['query' => $results->toSql(), 'bindings' => $results->getBindings()]);
-
-        // Get the results
-        $results = $results->get();
-
-        // Return the search results
-        return response()->json($results);
     }
-
     public function suggestions(Request $request)
     {
         $query = $request->input('query');

@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FriendRequest;
 use App\Models\User;
 // use App\Models\UserStatus;
+use App\Models\Notification;
+
 use App\Events\FriendRequestSent;
 use App\Events\FriendRequestAccepted;
 use App\Events\FriendRequestRejected;
@@ -51,7 +53,12 @@ class FriendRequestController extends Controller
         $friendRequest->receiver_id = $receiver_id;
         $friendRequest->status = 'pending';  // Status set to pending
         $friendRequest->save();
-
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'friend_request_sent',
+            'message' => 
+            'friend sent by user with ID ' . $sender_id,
+        ]);
         event(new FriendRequestSent($friendRequest, $sender, $receiver));
         event(new UserActionOccurred('Friend request sent', auth()->id()));
 
@@ -83,6 +90,13 @@ class FriendRequestController extends Controller
 
         // Start transaction
         DB::beginTransaction();
+
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'friend_request_accepted',
+            'message' => 
+            'friend request accepted by user with ID ' . $receiverId,
+        ]);
         event(new UserActionOccurred('Friend request accepted', auth()->id()));
 
         try {
@@ -151,6 +165,12 @@ class FriendRequestController extends Controller
         $friendRequest->delete();
 
         Log::info("Friend request from sender with ID: {$senderId} has been rejected and deleted.");
+        Notification::create([
+            'user_id' => Auth::id(),
+            'title' => 'friend_request_rejected',
+            'message' => 
+            'Friend request rejected by user with ID ' . $receiverId,
+        ]);
         event(new UserActionOccurred('Friend request rejected', auth()->id()));
 
         return response()->json(['message' => 'Friend request rejected', 'status' => 'rejected'], 200);

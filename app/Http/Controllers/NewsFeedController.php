@@ -99,7 +99,7 @@ class NewsFeedController extends Controller
             $isLiked = $item->likes()->where('user_id', $userId)->exists();
             return [
                 'id' => $item->id,
-                'media_url' => $item->media ? : null,
+                'media_url' => $item->media ?: null,
                 'media_type' => $item->media_type,
                 'content' => $item->content,
                 'views' => $item->views,
@@ -150,9 +150,9 @@ class NewsFeedController extends Controller
             // Invalidate the cache
             Cache::forget('news_feed_items');
             event(new UserActionOccurred('News feed item created', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($newsFeedItem->user_id, 'News feed item created', 'A new news feed item was created.');
+            $this->createNotification($newsFeedItem->user_id, $request->user()->id, 'News feed item created', 'A new news feed item was created.');
 
             return response()->json([
                 'message' => 'News feed item created successfully',
@@ -170,7 +170,7 @@ class NewsFeedController extends Controller
             ], 200);
         } catch (\Exception $e) {
             // Log the exception for debugging
-            \Log::error('Error saving news feed item: ' . $e->getMessage());
+            Log::error('Error saving news feed item: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to save news feed item.'], 500);
         }
     }
@@ -204,9 +204,9 @@ class NewsFeedController extends Controller
             $newsFeedItem->content = $request->input('content');
             $newsFeedItem->save();
             event(new UserActionOccurred('News feed item updated', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($newsFeedItem->user_id, 'News feed item updated', 'A news feed item was updated.');
+            $this->createNotification($newsFeedItem->user_id, $request->user()->id, 'News feed item updated', 'A news feed item was updated.');
 
             return response()->json([
                 'message' => 'News feed item updated successfully',
@@ -241,9 +241,9 @@ class NewsFeedController extends Controller
 
             $newsFeedItem->delete();
             event(new UserActionOccurred('News feed item deleted', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($newsFeedItem->user_id, 'News feed item deleted', 'A news feed item was deleted.');
+            $this->createNotification($newsFeedItem->user_id, $request->user()->id, 'News feed item deleted', 'A news feed item was deleted.');
 
             return response()->json(['message' => 'News feed item deleted'], 200);
         } catch (ModelNotFoundException $e) {
@@ -284,7 +284,7 @@ class NewsFeedController extends Controller
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'media_url' => $item->media ? : null,
+                'media_url' => $item->media ?: null,
                 'media_type' => $item->media_type,
                 'category' => $item->category,
                 'content' => $item->content,
@@ -325,9 +325,9 @@ class NewsFeedController extends Controller
             $newsFeedItem->status = 'approved';
             $newsFeedItem->save();
             event(new UserActionOccurred('News feed item approved', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($newsFeedItem->user_id, 'News feed item approved', 'Your news feed item was approved.');
+            $this->createNotification($newsFeedItem->user_id, auth()->id(), 'News feed item approved', 'Your news feed item was approved.');
 
             return response()->json(['message' => 'News feed item approved successfully']);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -342,9 +342,9 @@ class NewsFeedController extends Controller
             $newsFeedItem->status = 'rejected';
             $newsFeedItem->save();
             event(new UserActionOccurred('News feed item rejected', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($newsFeedItem->user_id, 'News feed item rejected', 'Your news feed item was rejected.');
+            $this->createNotification($newsFeedItem->user_id, auth()->id(), 'News feed item rejected', 'Your news feed item was rejected.');
 
             return response()->json(['message' => 'News feed item rejected successfully']);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -394,6 +394,13 @@ class NewsFeedController extends Controller
                 'description' => 'Shared a news feed item'
             ]);
 
+            Notification::create([
+                'sender_id' => Auth::id(),
+                'receiver_id' => $newsFeedItem->user_id,
+                'title' => 'share',
+                'message' => 'item shared'.$sharedNewsFeedItem->id,
+            ]);
+
             // Add the original user data to the response
             $sharedNewsFeedItem->original_user = [
                 'id' => $originalUser->id,
@@ -427,9 +434,9 @@ class NewsFeedController extends Controller
                 'shared_at' => $sharedNewsFeedItem->shared_at, // Include the share time
             ];
             event(new UserActionOccurred('News feed item shared', auth()->id()));
-            
+
             // Create a notification
-            $this->createNotification($sharedNewsFeedItem->user_id, 'News feed item shared', 'A news feed item was shared.');
+            $this->createNotification($sharedNewsFeedItem->user_id, Auth::id(), 'News feed item shared', 'A news feed item was shared.');
 
             return response()->json(['message' => 'Content shared successfully', 'data' => $transformedItem], 200);
         } catch (ModelNotFoundException $e) {
@@ -514,10 +521,17 @@ class NewsFeedController extends Controller
             'related_id' => $newsFeedItem->id,
             'description' => 'Liked a news feed item'
         ]);
+
+        Notification::create([
+            'sender_id' => Auth::id(),
+            'receiver_id' => $newsFeedItem->user_id,
+            'title' => 'like',
+            'message' => 'Liked a news feed item'.$newsFeedItem->id,
+        ]);
         event(new UserActionOccurred('News feed item liked', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'News feed item liked', 'Your news feed item was liked.');
+        $this->createNotification($newsFeedItem->user_id, Auth::id(), 'News feed item liked', 'Your news feed item was liked.');
 
         // Return the updated number of likes
         return response()->json(['message' => 'News feed item liked', 'likes' => $newsFeedItem->likes()->count()]);
@@ -542,10 +556,17 @@ class NewsFeedController extends Controller
             'related_id' => $newsFeedItem->id,
             'description' => 'Unliked a news feed item'
         ]);
+
+        Notification::create([
+            'sender_id' => Auth::id(),
+            'receiver_id' => $newsFeedItem->user_id,
+            'title' => 'like',
+            'message' => 'Unliked a news feed item'.$newsFeedItem->id,
+        ]);
         event(new UserActionOccurred('News feed item unliked', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'News feed item unliked', 'Your news feed item was unliked.');
+        $this->createNotification($newsFeedItem->user_id, Auth::id(), 'News feed item unliked', 'Your news feed item was unliked.');
 
         // Return the updated number of likes
         return response()->json(['message' => 'News feed item unliked', 'likes' => $newsFeedItem->likes()->count()]);
@@ -585,9 +606,9 @@ class NewsFeedController extends Controller
             ->with('user:id,name,profile_picture')
             ->first();
         event(new UserActionOccurred('News feed item commented', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'News feed item commented', 'Your news feed item received a comment.');
+        $this->createNotification($newsFeedItem->user_id, $user->id, 'News feed item commented', 'Your news feed item received a comment.');
 
         return response()->json([
             'message'=>'Comment added',
@@ -603,62 +624,61 @@ class NewsFeedController extends Controller
     }
 
     public function updateComment(Request $request, $commentId)
-{
-    // Validate the request input
-    $request->validate([
-        'content' => 'required|string',
-    ]);
+    {
+        // Validate the request input
+        $request->validate([
+            'content' => 'required|string',
+        ]);
 
-    // Retrieve the authenticated user
-    $user = Auth::user();
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized'], 401);
+        // Retrieve the authenticated user
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Find the comment
+        $comment = Comment::find($commentId);
+        if (!$comment) {
+            return response()->json(['message' => 'Comment not found'], 404);
+        }
+
+        // Check if the user is the author of the comment
+        if ($comment->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Find the news feed item associated with the comment
+        $newsFeedItem = NewsFeedItem::find($comment->news_feed_item_id);
+        if (!$newsFeedItem) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        }
+
+        // Update the comment content
+        $comment->content = $request->input('content');
+        $comment->save();
+
+        // Retrieve the updated comment with user data
+        $commentWithUser = Comment::where('id', $comment->id)
+            ->with('user:id,name,profile_picture')
+            ->first();
+
+        event(new UserActionOccurred('News feed item comment updated', auth()->id()));
+
+        // Create a notification
+        $this->createNotification($newsFeedItem->user_id, $user->id, 'News feed item comment updated', 'A comment on your news feed item was updated.');
+
+        return response()->json([
+            'id' => $commentWithUser->id,
+            'content' => $commentWithUser->content,
+            'user' => [
+                'id' => $commentWithUser->user->id,
+                'name' => $commentWithUser->user->name,
+                'profile_picture_url' => $commentWithUser->user->profile_picture ? url('storage/' . $commentWithUser->user->profile_picture) : null,
+            ],
+            'created_at' => $commentWithUser->created_at,
+            'updated_at' => $commentWithUser->updated_at,
+        ], 200);
     }
-
-    // Find the comment
-    $comment = Comment::find($commentId);
-    if (!$comment) {
-        return response()->json(['message' => 'Comment not found'], 404);
-    }
-
-    // Check if the user is the author of the comment
-    if ($comment->user_id !== $user->id) {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
-    // Find the news feed item associated with the comment
-    $newsFeedItem = NewsFeedItem::find($comment->news_feed_item_id);
-    if (!$newsFeedItem) {
-        return response()->json(['message' => 'News feed item not found'], 404);
-    }
-
-    // Update the comment content
-    $comment->content = $request->input('content');
-    $comment->save();
-
-    // Retrieve the updated comment with user data
-    $commentWithUser = Comment::where('id', $comment->id)
-        ->with('user:id,name,profile_picture')
-        ->first();
-        
-    event(new UserActionOccurred('News feed item comment updated', auth()->id()));
-    
-    // Create a notification
-    $this->createNotification($newsFeedItem->user_id, 'News feed item comment updated', 'A comment on your news feed item was updated.');
-
-    return response()->json([
-        'id' => $commentWithUser->id,
-        'content' => $commentWithUser->content,
-        'user' => [
-            'id' => $commentWithUser->user->id,
-            'name' => $commentWithUser->user->name,
-            'profile_picture_url' => $commentWithUser->user->profile_picture ? url('storage/' . $commentWithUser->user->profile_picture) : null,
-        ],
-        'created_at' => $commentWithUser->created_at,
-        'updated_at' => $commentWithUser->updated_at,
-    ], 200);
-}
-
 
     public function deleteComment(Request $request, $commentId)
     {
@@ -682,9 +702,9 @@ class NewsFeedController extends Controller
             $newsFeedItem->decrement('comments');
         }
         event(new UserActionOccurred('News feed item comment deleted', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'News feed item comment deleted', 'A comment on your news feed item was deleted.');
+        $this->createNotification($newsFeedItem->user_id, auth()->id(), 'News feed item comment deleted', 'A comment on your news feed item was deleted.');
 
         return response()->json(['message' => 'Comment deleted'], 200);
     }
@@ -922,9 +942,9 @@ class NewsFeedController extends Controller
 
         $newsFeedItem->saves()->attach($user->id);
         event(new UserActionOccurred('Post saved successfully', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'Post saved', 'Your post was saved.');
+        $this->createNotification($newsFeedItem->user_id, $user->id, 'Post saved', 'Your post was saved.');
 
         return response()->json(['message' => 'Post saved successfully']);
     }
@@ -940,9 +960,9 @@ class NewsFeedController extends Controller
 
         $newsFeedItem->saves()->detach($user->id);
         event(new UserActionOccurred('Post unsaved successfully', auth()->id()));
-        
+
         // Create a notification
-        $this->createNotification($newsFeedItem->user_id, 'Post unsaved', 'Your post was unsaved.');
+        $this->createNotification($newsFeedItem->user_id, $user->id, 'Post unsaved', 'Your post was unsaved.');
 
         return response()->json(['message' => 'Post unsaved successfully']);
     }
@@ -1001,13 +1021,81 @@ class NewsFeedController extends Controller
         ]);
     }
 
-    private function createNotification($userId, $title, $message)
+    private function createNotification($receiverId, $senderId, $title, $message)
     {
-        CreateNotificationJob::dispatch($userId, $title, $message);
+        Notification::create([
+            'receiver_id' => $receiverId,
+            'sender_id' => $senderId,
+            'title' => $title,
+            'message' => $message,
+        ]);
     }
 
     public function someMethod(Request $request)
     {
-        $this->createNotification($request->user()->id, 'Notification Title', 'Notification Message');
+        $this->createNotification($request->user()->id, $request->user()->id, 'Notification Title', 'Notification Message');
     }
+    
+    public function getById(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer|exists:news_feed_items,id',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $id = $request->input('id');
+
+            // Find the news feed item by its ID and include user data
+            $newsFeedItem = NewsFeedItem::with('user:id,name,profile_picture')->findOrFail($id);
+
+            $isLiked = $newsFeedItem->likes()->where('user_id', $user->id)->exists();
+            $originalUser = null;
+            $originalCreatedAt = null;
+
+            if ($newsFeedItem->original_news_feed_item_id) {
+                $originalItem = NewsFeedItem::find($newsFeedItem->original_news_feed_item_id);
+                if ($originalItem) {
+                    $originalUser = $originalItem->user()->select('id', 'name', 'profile_picture')->first();
+                    $originalCreatedAt = $originalItem->created_at;
+                }
+            }
+
+            $transformedItem = [
+                'id' => $newsFeedItem->id,
+                'media_url' => $newsFeedItem->media ? url('storage/' . $newsFeedItem->media) : null,
+                'media_type' => $newsFeedItem->media_type,
+                'category' => $newsFeedItem->category,
+                'content' => $newsFeedItem->content,
+                'views' => $newsFeedItem->views,
+                'likes' => $newsFeedItem->likes,
+                'comments' => $newsFeedItem->comments,
+                'shares' => $newsFeedItem->shares,
+                'created_at' => $newsFeedItem->created_at,
+                'shared_at' => $newsFeedItem->shared_at,
+                'user' => [
+                    'id' => $newsFeedItem->user->id,
+                    'name' => $newsFeedItem->user->name,
+                    'profile_picture_url' => $newsFeedItem->user->profile_picture ? url('storage/' . $newsFeedItem->user->profile_picture) : null,
+                ],
+                'original_user' => $originalUser ? [
+                    'id' => $originalUser->id,
+                    'name' => $originalUser->name,
+                    'profile_picture_url' => $originalUser->profile_picture ? url('storage/' . $originalUser->profile_picture) : null,
+                    'created_at' => $originalCreatedAt,
+                ] : null,
+                'is_liked' => $isLiked,
+                'is_saved' => $user ? $newsFeedItem->saves()->where('user_id', $user->id)->exists() : false,
+            ];
+
+            return response()->json($transformedItem);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'News feed item not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving news feed item: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while retrieving the news feed item'], 500);
+        }
+    }
+
 }

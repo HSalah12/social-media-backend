@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 use App\Models\Conversation;
+
+use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\Message;
@@ -57,7 +59,11 @@ class ConversationController extends Controller
             'message' => $encryptedMessage,
             'is_delivered' => false,
         ]);
-
+        // Notification::create([
+        //     'user_id' => Auth::id(),
+        //     'title' => 'Message',
+        //     'message' => 'user : '. $senderId.'in conversation : '.$request->conversation_id.'sent message : '.$encryptedMessage.' to user : '.$receiverId,
+        // ]);
         event(new MessageSent($message,  auth()->id()));
 
         return response()->json([
