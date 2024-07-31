@@ -3,10 +3,17 @@
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packagist.org"
+        }
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
         "hootlex/laravel-moderation": "^1.1",
+        "laravel-notification-channels/fcm": "^4.3",
         "laravel/framework": "^11.9",
         "laravel/passport": "^12.2",
         "laravel/sanctum": "^4.0",

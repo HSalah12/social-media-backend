@@ -214,6 +214,7 @@ Route::get('/news-feed/saved', [NewsFeedController::class, 'getSavedPosts'])->mi
 // notifications for testing
 Route::get('/notifications', [NotificationController::class, 'index']);
 Route::get('/notifications/user', [NotificationController::class, 'userNotifications'])->middleware('auth:api');
+Route::post('/notifications', [NotificationController::class, 'store'])->middleware('auth:api');
 
 // notifications settings
 Route::get('/notification-settings', [NotificationSettingsController::class,'index'])->middleware('auth:api');
